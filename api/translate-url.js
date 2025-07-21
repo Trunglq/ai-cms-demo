@@ -19,7 +19,17 @@ module.exports = async (req, res) => {
     // Fetch article content
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'max-age=0'
       }
     });
 
@@ -35,7 +45,22 @@ module.exports = async (req, res) => {
     let content = '';
 
     // Try different title selectors
-    const titleSelectors = ['h1', '.headline', '.title', '.article-title', '[data-testid="headline"]', 'h1.story-title'];
+    const titleSelectors = [
+      'h1', 
+      '.headline', 
+      '.title', 
+      '.article-title', 
+      '[data-testid="headline"]', 
+      'h1.story-title',
+      // Vietnamese sites
+      'h1.title-detail',           // VnExpress
+      '.title_news_detail h1',     // Tuoi Tre
+      '.article-title h1',         // Thanh Nien
+      '.entry-title',              // Generic WordPress
+      '.post-title',
+      '.news-title',
+      'h1.title'
+    ];
     for (const selector of titleSelectors) {
       const titleElement = $(selector).first();
       if (titleElement.length && titleElement.text().trim()) {
@@ -53,31 +78,97 @@ module.exports = async (req, res) => {
       '.article-content',
       '[data-testid="article-body"]',
       '.ArticleBody',
-      '.StoryBodyCompanionColumn'
+      '.StoryBodyCompanionColumn',
+      // Vietnamese sites specific
+      '.fck_detail',               // VnExpress main content
+      '.sidebar_1 .fck_detail',    // VnExpress alternative
+      '.content_detail',           // Generic Vietnamese
+      '.detail-content',           // Tuoi Tre, Thanh Nien
+      '.article-content-detail',   // Some Vietnamese sites
+      '.news-content',
+      '.post-body',
+      '.entry-content',
+      // More generic fallbacks
+      'article .content',
+      '.main-content .content',
+      '.article-wrapper .content',
+      '#content-detail',
+      '.content-article'
     ];
 
     for (const selector of contentSelectors) {
       const contentElement = $(selector);
       if (contentElement.length) {
         content = contentElement.text().trim();
-        break;
+        if (content.length > 100) { // Only accept if substantial content
+          break;
+        }
       }
     }
 
-    // Fallback: try to get paragraphs within article/main
-    if (!content) {
-      const paragraphs = $('article p, main p, .content p').map((i, el) => $(el).text().trim()).get();
-      content = paragraphs.join('\n\n');
+    // Enhanced fallback: try to get paragraphs with more specific targeting
+    if (!content || content.length < 100) {
+      console.log('Using enhanced fallback for content extraction...');
+      
+      // Remove unwanted elements first
+      $('script, style, nav, header, footer, .advertisement, .ads, .social-share, .related-news').remove();
+      
+      // Try different paragraph extraction strategies
+      const fallbackSelectors = [
+        'article p',
+        'main p', 
+        '.content p',
+        '.detail p',
+        '.article p',
+        '.post p',
+        'div[class*="content"] p',
+        'div[class*="detail"] p',
+        'div[class*="article"] p'
+      ];
+      
+      for (const selector of fallbackSelectors) {
+        const paragraphs = $(selector).map((i, el) => {
+          const text = $(el).text().trim();
+          return text.length > 20 ? text : null; // Filter out short paragraphs
+        }).get().filter(Boolean);
+        
+        if (paragraphs.length > 2) { // Need at least 3 substantial paragraphs
+          content = paragraphs.join('\n\n');
+          break;
+        }
+      }
     }
 
-    // Clean content
+    // Final fallback: get all text from main content areas
+    if (!content || content.length < 100) {
+      console.log('Using final fallback...');
+      const mainContent = $('main, article, .main, .content, .detail').first();
+      if (mainContent.length) {
+        // Remove unwanted elements
+        mainContent.find('script, style, nav, .advertisement, .ads, .social-share, .related-news, .tags, .category').remove();
+        content = mainContent.text().trim();
+      }
+    }
+
+    // Clean content more thoroughly
     content = content
-      .replace(/\s+/g, ' ')
-      .replace(/\n\s*\n/g, '\n\n')
+      .replace(/\s+/g, ' ')                    // Multiple spaces to single
+      .replace(/\n\s*\n\s*\n/g, '\n\n')       // Multiple newlines to double
+      .replace(/^\s+|\s+$/g, '')              // Trim start/end
+      .replace(/\t/g, ' ')                     // Tabs to spaces
       .trim();
 
-    if (!content) {
-      return res.status(400).json({ error: 'Could not extract article content from URL' });
+    console.log(`Extracted content length: ${content.length}`);
+    console.log(`Title: ${title}`);
+    console.log(`Content preview: ${content.substring(0, 200)}...`);
+
+    if (!content || content.length < 100) {
+      return res.status(400).json({ 
+        error: 'Could not extract sufficient article content from URL',
+        details: `Only extracted ${content.length} characters. The site may have anti-scraping protection or unusual structure.`,
+        extractedTitle: title,
+        extractedPreview: content.substring(0, 200)
+      });
     }
 
     // Limit content length for API
