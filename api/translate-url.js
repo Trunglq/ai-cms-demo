@@ -318,6 +318,43 @@ async function advancedCrawler(url, hostname) {
           }
         }
       }
+      else if (hostname.includes('dantri')) {
+        // Dân trí selectors
+        const titleSelectors = [
+          'h1.title-page-detail',
+          '.detail-title h1',
+          'h1.dt-text-title',
+          '.article-title h1',
+          'h1'
+        ];
+        
+        const contentSelectors = [
+          '.singular-content',
+          '.detail-content',
+          '.article-content',
+          '.dt-text-content',
+          '.content-body'
+        ];
+
+        for (const selector of titleSelectors) {
+          const el = document.querySelector(selector);
+          if (el && el.textContent.trim()) {
+            title = el.textContent.trim();
+            break;
+          }
+        }
+
+        for (const selector of contentSelectors) {
+          const el = document.querySelector(selector);
+          if (el) {
+            const paragraphs = Array.from(el.querySelectorAll('p')).map(p => p.textContent.trim()).filter(text => text.length > 20);
+            if (paragraphs.length > 0) {
+              content = paragraphs.join('\n\n');
+              break;
+            }
+          }
+        }
+      }
       
       // Generic fallback for other Vietnamese sites
       if (!content) {
@@ -406,8 +443,16 @@ async function basicExtraction(url, hostname) {
   } else if (hostname.includes('vietnamnet')) {
     title = $('.ArticleTitle').text().trim() || $('.detail-title h1').text().trim() || $('h1').first().text().trim();
     content = $('.ArticleContent').text().trim() || $('.detail-content-body').text().trim();
+  } else if (hostname.includes('dantri')) {
+    title = $('h1.title-page-detail').text().trim() || $('.detail-title h1').text().trim() || $('h1.dt-text-title').text().trim() || $('h1').first().text().trim();
+    content = $('.singular-content').text().trim() || $('.detail-content').text().trim() || $('.dt-text-content').text().trim();
+  } else if (hostname.includes('thanhnien')) {
+    title = $('.detail-title h1').text().trim() || $('.article-title').text().trim() || $('h1').first().text().trim();
+    content = $('.detail-cmain').text().trim() || $('.article-body').text().trim();
+  } else if (hostname.includes('tuoitre')) {
+    title = $('.article-title h1').text().trim() || $('.detail-title').text().trim() || $('h1').first().text().trim();
+    content = $('.detail-content article').text().trim() || $('.article-content').text().trim();
   }
-  // ... other basic extractions
 
   return { title, content };
 }

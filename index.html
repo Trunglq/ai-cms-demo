@@ -343,7 +343,7 @@
                         const content = document.getElementById('translatedContent').innerText;
                         const fullText = title + '\n\n' + content;
                         
-                        if (fullText.trim()) {
+                        if (fullText.trim() && title !== 'Không có tiêu đề' && content !== 'Không có nội dung') {
                             navigator.clipboard.writeText(fullText).then(() => {
                                 const copyBtn = document.getElementById('urlCopyBtn');
                                 const originalText = copyBtn.innerHTML;
@@ -385,19 +385,30 @@
                             const data = await response.json();
 
                             // Display results
-                            document.getElementById('originalTitle').innerText = data.originalTitle || 'Không có tiêu đề';
-                            document.getElementById('originalUrl').innerText = data.originalUrl;
-                            document.getElementById('originalPreview').innerText = data.originalContent;
+                            document.getElementById('originalTitle').innerText = data.original?.title || 'Không có tiêu đề';
+                            document.getElementById('originalUrl').innerText = url;
+                            document.getElementById('originalPreview').innerText = data.original?.content || 'Không có nội dung';
                             
-                            document.getElementById('translatedTitle').innerText = data.translatedTitle || 'Không có tiêu đề';
-                            document.getElementById('translatedContent').innerText = data.translatedContent;
+                            document.getElementById('translatedTitle').innerText = data.translated?.title || 'Không có tiêu đề';
+                            document.getElementById('translatedContent').innerText = data.translated?.content || 'Không có nội dung';
                             
                             resultSection.style.display = 'block';
                             document.getElementById('urlCopyBtn').style.display = 'block';
                             
                         } catch (error) {
                             console.error(error);
-                            alert('Lỗi khi dịch URL: ' + error.message + '\nVui lòng kiểm tra URL có hợp lệ không.');
+                            
+                            // Try to parse error message from response
+                            let errorMessage = 'Lỗi khi dịch URL.';
+                            if (error.message.includes('400')) {
+                                errorMessage = 'Không thể trích xuất nội dung từ URL này. Vui lòng thử URL khác hoặc kiểm tra URL có hợp lệ không.';
+                            } else if (error.message.includes('500')) {
+                                errorMessage = 'Lỗi server khi xử lý URL. Vui lòng thử lại sau.';
+                            } else {
+                                errorMessage = 'Lỗi khi dịch URL: ' + error.message + '\nVui lòng kiểm tra URL có hợp lệ không.';
+                            }
+                            
+                            alert(errorMessage);
                         } finally {
                             btn.innerHTML = 'Dịch Bài Báo';
                             btn.disabled = false;
