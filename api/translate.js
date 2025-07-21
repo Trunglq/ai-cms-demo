@@ -11,21 +11,66 @@ module.exports = async (req, res) => {
 
   let prompt = '';
   if (direction === 'en-vi') {
-    prompt = `Dịch văn bản sau từ tiếng Anh sang tiếng Việt theo chuẩn báo chí. Yêu cầu:
-- Sử dụng văn phong báo chí: khách quan, chính xác, súc tích
-- Tuân thủ quy chuẩn ngôn ngữ báo chí Việt Nam
-- Sử dụng thuật ngữ phù hợp với lĩnh vực (nếu có)
-- Đảm bảo tính chuyên nghiệp và dễ hiểu cho độc giả
+    prompt = `Dịch văn bản sau từ tiếng Anh sang tiếng Việt theo chuẩn báo chí Việt Nam chuyên nghiệp. Yêu cầu chi tiết:
 
-Văn bản gốc: ${text}`;
+PHONG CÁCH VÀ VĂN PHONG:
+- Sử dụng văn phong báo chí: khách quan, chính xác, súc tích, trang trọng
+- Tránh ngôn ngữ thông tục, lóng, hoặc quá văn học
+- Câu văn rõ ràng, logic, dễ hiểu cho đại chúng
+- Sử dụng câu chủ động thay vì câu bị động khi có thể
+
+QUY CHUẨN BÁOE CHÍ VIỆT NAM:
+- Tuân thủ chính tả và ngữ pháp chuẩn tiếng Việt
+- Sử dụng thuật ngữ báo chí chính xác (ví dụ: "tuyên bố" thay vì "nói", "khẳng định" thay vì "bảo")
+- Danh xưng và chức danh chính xác (Tổng thống, Thủ tướng, Chủ tịch...)
+- Đơn vị tiền tệ, thời gian theo chuẩn Việt Nam
+
+THUẬT NGỮ CHUYÊN NGÀNH:
+- Kinh tế: GDP, lạm phát, lãi suất, chứng khoán...
+- Chính trị: quốc hội, chính phủ, ngoại giao, luật pháp...
+- Xã hội: giáo dục, y tế, môi trường, an sinh...
+- Công nghệ: AI, blockchain, internet, mạng xã hội...
+
+CẤU TRÚC VÀ LOGIC:
+- Giữ nguyên ý nghĩa và tone gốc
+- Đảm bảo tính nhất quán trong thuật ngữ
+- Cấu trúc câu phù hợp với thói quen đọc của người Việt
+- Sử dụng dấu câu đúng chuẩn báo chí
+
+Văn bản gốc: ${text}
+
+Chỉ trả về phần dịch, không giải thích thêm.`;
   } else if (direction === 'vi-en') {
-    prompt = `Dịch văn bản sau từ tiếng Việt sang tiếng Anh theo chuẩn báo chí quốc tế. Yêu cầu:
-- Sử dụng văn phong báo chí: khách quan, chính xác, súc tích
-- Tuân thủ chuẩn ngôn ngữ báo chí tiếng Anh (AP Style/Reuters)
-- Sử dụng thuật ngữ chuyên ngành phù hợp
-- Đảm bảo tính chuyên nghiệp và dễ hiểu cho độc giả quốc tế
+    prompt = `Translate the following Vietnamese text to English following international journalism standards. Detailed requirements:
 
-Văn bản gốc: ${text}`;
+STYLE AND TONE:
+- Use professional journalism style: objective, accurate, concise, formal
+- Avoid colloquialisms, slang, or overly literary language
+- Clear, logical sentences that are accessible to general readers
+- Prefer active voice over passive voice when possible
+
+INTERNATIONAL JOURNALISM STANDARDS:
+- Follow AP Style/Reuters guidelines for consistency
+- Use standard journalism terminology (e.g., "stated" not "said", "announced" not "told")
+- Proper titles and designations (President, Prime Minister, Chairman...)
+- Standard international units, time formats, currency
+
+SPECIALIZED TERMINOLOGY:
+- Economics: GDP, inflation, interest rates, stock market...
+- Politics: parliament, government, diplomacy, legislation...
+- Society: education, healthcare, environment, social welfare...
+- Technology: AI, blockchain, internet, social media...
+
+STRUCTURE AND LOGIC:
+- Maintain original meaning and tone
+- Ensure terminology consistency throughout
+- Sentence structure suitable for international readers
+- Proper punctuation according to journalism standards
+- Cultural context adaptation for global audience
+
+Original text: ${text}
+
+Return only the translation, no explanations.`;
   } else {
     return res.status(400).json({ error: 'Invalid direction' });
   }
