@@ -51,9 +51,12 @@ export default async function handler(req, res) {
 
     if (!title && !content) {
       return res.status(400).json({ 
-        error: 'Không thể trích xuất nội dung từ URL này. Vui lòng thử URL khác.' 
+        error: `Không thể trích xuất nội dung từ ${hostname}. Vui lòng thử URL khác hoặc kiểm tra URL có hợp lệ không.`
       });
     }
+
+    // Debug logging
+    console.log(`Extracted for ${hostname}: title=${title?.length || 0} chars, content=${content?.length || 0} chars`);
 
     // Translate the content
     console.log('Starting translation...');
@@ -68,6 +71,12 @@ export default async function handler(req, res) {
       translated: {
         title: translatedTitle,
         content: translatedContent
+      },
+      debug: {
+        hostname: hostname,
+        extractionMethod: content ? 'success' : 'failed',
+        titleLength: title?.length || 0,
+        contentLength: content?.length || 0
       }
     });
 
@@ -118,13 +127,24 @@ async function advancedCrawler(url, hostname) {
     });
 
     console.log(`Navigating to: ${url}`);
-    await page.goto(url, { 
-      waitUntil: 'domcontentloaded',
-      timeout: 30000 
-    });
+    
+    try {
+      await page.goto(url, { 
+        waitUntil: 'domcontentloaded',
+        timeout: 45000  // Increase timeout for slow sites
+      });
 
-    // Wait for content to load
-    await page.waitForTimeout(3000);
+      // Wait for content to load
+      await page.waitForTimeout(5000); // Increase wait time
+    } catch (error) {
+      console.log(`Navigation timeout for ${url}, trying fallback...`);
+      // Try a second time with different settings
+      await page.goto(url, { 
+        waitUntil: 'networkidle0',
+        timeout: 30000 
+      });
+      await page.waitForTimeout(2000);
+    }
 
     console.log('Extracting content with site-specific selectors...');
     
@@ -385,35 +405,28 @@ async function advancedCrawler(url, hostname) {
         }
       }
       
-      // Generic fallback for other Vietnamese sites
+      // Enhanced generic fallback for all Vietnamese sites
       if (!content) {
-        console.log('Using generic Vietnamese extraction...');
-        const genericSelectors = [
-          'article p',
-          '.article p',
-          '.content p',
-          '.post p',
-          '.detail p',
-          'main p',
-          '.container p'
-        ];
+        console.log(`Using enhanced generic extraction for ${hostname}...`);
+        
+        // Try all paragraphs on page with better filtering
+        const allParagraphs = Array.from(document.querySelectorAll('p'))
+          .map(p => p.textContent.trim())
+          .filter(text => {
+            if (text.length < 50) return false; // Increase minimum length
+            if (text.includes('©') || text.includes('Copyright') || text.includes('Bản quyền')) return false;
+            if (text.includes('Tags:') || text.includes('Từ khóa:') || text.includes('Tag:')) return false;
+            if (text.includes('Chia sẻ') || text.includes('Share') || text.includes('Facebook')) return false;
+            if (text.includes('Theo ') && text.includes(' -')) return false; // Remove author attribution
+            if (text.match(/^\d+\/\d+\/\d+/) || text.match(/\d+:\d+/)) return false; // Remove dates/times
+            if (text.includes('đọc thêm') || text.includes('xem thêm')) return false;
+            if (text.includes('VnExpress') || text.includes('VietnamNet') || text.includes('Dantri')) return false;
+            return true;
+          });
 
-        for (const selector of genericSelectors) {
-          const paragraphs = Array.from(document.querySelectorAll(selector))
-            .map(p => p.textContent.trim())
-            .filter(text => {
-              if (text.length < 30) return false;
-              if (text.includes('©') || text.includes('Copyright')) return false;
-              if (text.includes('Tags:') || text.includes('Từ khóa:')) return false;
-              if (text.includes('Chia sẻ:') || text.includes('Share:')) return false;
-              if (text.match(/^\d+\/\d+\/\d+/)) return false;
-              return true;
-            });
-
-          if (paragraphs.length >= 3) {
-            content = paragraphs.join('\n\n');
-            break;
-          }
+        if (allParagraphs.length >= 3) {
+          content = allParagraphs.slice(0, 15).join('\n\n'); // Take first 15 good paragraphs
+          console.log(`Enhanced generic fallback found ${allParagraphs.length} paragraphs for ${hostname}`);
         }
       }
 
@@ -446,12 +459,16 @@ async function basicExtraction(url, hostname) {
   const response = await fetch(url, {
     headers: {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-      'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
+      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+      'Accept-Language': 'vi-VN,vi;q=0.9,en-US,en;q=0.8',
       'Accept-Encoding': 'gzip, deflate, br',
       'DNT': '1',
       'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1'
+      'Upgrade-Insecure-Requests': '1',
+      'Sec-Fetch-Dest': 'document',
+      'Sec-Fetch-Mode': 'navigate',
+      'Sec-Fetch-Site': 'none',
+      'Cache-Control': 'no-cache'
     }
   });
 
@@ -519,6 +536,27 @@ async function basicExtraction(url, hostname) {
   } else if (hostname.includes('tuoitre')) {
     title = $('.article-title h1').text().trim() || $('.detail-title').text().trim() || $('h1').first().text().trim();
     content = $('.detail-content article').text().trim() || $('.article-content').text().trim();
+  }
+
+  // Generic fallback for Vietnamese news sites if specific methods failed
+  if (!content) {
+    console.log(`Trying generic fallback for ${hostname}`);
+    const allParagraphs = $('p').map((i, el) => $(el).text().trim()).get()
+      .filter(text => {
+        if (text.length < 50) return false; // Increase minimum length
+        if (text.includes('©') || text.includes('Copyright') || text.includes('Bản quyền')) return false;
+        if (text.includes('Tags:') || text.includes('Từ khóa:') || text.includes('Tag:')) return false;
+        if (text.includes('Chia sẻ') || text.includes('Share') || text.includes('Facebook')) return false;
+        if (text.includes('Theo ') && text.includes(' -')) return false; // Remove author attribution
+        if (text.match(/^\d+\/\d+\/\d+/) || text.match(/\d+:\d+/)) return false; // Remove dates/times
+        if (text.includes('đọc thêm') || text.includes('xem thêm')) return false;
+        return true;
+      });
+
+    if (allParagraphs.length >= 3) {
+      content = allParagraphs.slice(0, 15).join('\n\n'); // Take first 15 good paragraphs
+      console.log(`Generic fallback found ${allParagraphs.length} paragraphs for ${hostname}`);
+    }
   }
 
   return { title, content };
