@@ -40,101 +40,60 @@ module.exports = async (req, res) => {
     const html = await response.text();
     const $ = cheerio.load(html);
 
+    // Detect site type for custom extraction
+    const hostname = new URL(url).hostname.toLowerCase();
+    console.log(`Processing site: ${hostname}`);
+
     // Extract article content using common selectors
     let title = '';
     let content = '';
 
-    // Try different title selectors
-    const titleSelectors = [
-      'h1', 
-      '.headline', 
-      '.title', 
-      '.article-title', 
-      '[data-testid="headline"]', 
-      'h1.story-title',
-      // Vietnamese sites
-      'h1.title-detail',           // VnExpress
-      '.title_news_detail h1',     // Tuoi Tre
-      '.article-title h1',         // Thanh Nien
-      '.entry-title',              // Generic WordPress
-      '.post-title',
-      '.news-title',
-      'h1.title'
-    ];
-    for (const selector of titleSelectors) {
-      const titleElement = $(selector).first();
-      if (titleElement.length && titleElement.text().trim()) {
-        title = titleElement.text().trim();
-        break;
-      }
+    // Site-specific extraction logic
+    if (hostname.includes('vnexpress')) {
+      // VnExpress specific extraction
+      title = $('h1.title-detail').text().trim() || $('h1').first().text().trim();
+      content = $('.fck_detail').text().trim() || $('.sidebar_1 .fck_detail').text().trim();
+    } else if (hostname.includes('vietnamnet')) {
+      // VietnamNet specific extraction
+      title = $('.ArticleTitle').text().trim() || $('.detail-title h1').text().trim() || $('.maincontent h1').text().trim();
+      content = $('.ArticleContent').text().trim() || $('.maincontent .ArticleContent').text().trim() || $('.detail-content-body').text().trim();
+    } else if (hostname.includes('vneconomy')) {
+      // VnEconomy specific extraction
+      title = $('.detail-title').text().trim() || $('.article-header h1').text().trim() || $('.entry-header h1').text().trim();
+      content = $('.detail-content .content').text().trim() || $('.article-content .content').text().trim() || $('.post-content-inner').text().trim();
+    } else if (hostname.includes('zing')) {
+      // Zing News specific extraction
+      title = $('.the-article-header h1').text().trim() || $('.article-header .title').text().trim();
+      content = $('.the-article-body').text().trim() || $('.article-body .content').text().trim() || $('.inner-article').text().trim();
+    } else if (hostname.includes('dantri')) {
+      // Dan Tri specific extraction
+      title = $('.dt-news__title').text().trim() || $('.e-magazine__title').text().trim();
+      content = $('.dt-news__content').text().trim() || $('.e-magazine__body').text().trim() || $('.singular-content').text().trim();
+    } else if (hostname.includes('24h')) {
+      // 24h specific extraction
+      title = $('.cate-24h-arti-title').text().trim() || $('.title-news').text().trim();
+      content = $('.cate-24h-arti-txt-deta').text().trim() || $('.cate-24h-foot-arti-deta-info').text().trim();
     }
 
-    // Try different content selectors
-    const contentSelectors = [
-      '.article-body',
-      '.story-body',
-      '.post-content',
-      '.entry-content',
-      '.article-content',
-      '[data-testid="article-body"]',
-      '.ArticleBody',
-      '.StoryBodyCompanionColumn',
-      // Vietnamese sites specific
-      '.fck_detail',               // VnExpress main content
-      '.sidebar_1 .fck_detail',    // VnExpress alternative
-      '.content_detail',           // Generic Vietnamese
-      '.detail-content',           // Tuoi Tre, Thanh Nien
-      '.article-content-detail',   // Some Vietnamese sites
-      '.news-content',
-      '.post-body',
-      '.entry-content',
-      // More generic fallbacks
-      'article .content',
-      '.main-content .content',
-      '.article-wrapper .content',
-      '#content-detail',
-      '.content-article'
-    ];
-
-    for (const selector of contentSelectors) {
-      const contentElement = $(selector);
-      if (contentElement.length) {
-        content = contentElement.text().trim();
-        if (content.length > 100) { // Only accept if substantial content
+    // If site-specific extraction didn't work, use generic extraction
+    if (!title) {
+      for (const selector of titleSelectors) {
+        const titleElement = $(selector).first();
+        if (titleElement.length && titleElement.text().trim()) {
+          title = titleElement.text().trim();
           break;
         }
       }
     }
 
-    // Enhanced fallback: try to get paragraphs with more specific targeting
     if (!content || content.length < 100) {
-      console.log('Using enhanced fallback for content extraction...');
-      
-      // Remove unwanted elements first
-      $('script, style, nav, header, footer, .advertisement, .ads, .social-share, .related-news').remove();
-      
-      // Try different paragraph extraction strategies
-      const fallbackSelectors = [
-        'article p',
-        'main p', 
-        '.content p',
-        '.detail p',
-        '.article p',
-        '.post p',
-        'div[class*="content"] p',
-        'div[class*="detail"] p',
-        'div[class*="article"] p'
-      ];
-      
-      for (const selector of fallbackSelectors) {
-        const paragraphs = $(selector).map((i, el) => {
-          const text = $(el).text().trim();
-          return text.length > 20 ? text : null; // Filter out short paragraphs
-        }).get().filter(Boolean);
-        
-        if (paragraphs.length > 2) { // Need at least 3 substantial paragraphs
-          content = paragraphs.join('\n\n');
-          break;
+      for (const selector of contentSelectors) {
+        const contentElement = $(selector);
+        if (contentElement.length) {
+          content = contentElement.text().trim();
+          if (content.length > 100) { // Only accept if substantial content
+            break;
+          }
         }
       }
     }
