@@ -31,7 +31,20 @@ ${language === 'vi' ?
 
 Văn bản gốc: ${text}
 
-Trả về văn bản đã được kiểm tra và sửa lỗi theo chuẩn báo chí.`;
+Hãy trả về kết quả theo định dạng JSON với 3 phần:
+1. "original": văn bản gốc
+2. "corrected": văn bản đã sửa lỗi theo chuẩn báo chí
+3. "changes": mảng các thay đổi, mỗi item có format {"from": "text cũ", "to": "text mới", "reason": "lý do sửa"}
+
+Ví dụ format trả về:
+{
+  "original": "văn bản gốc",
+  "corrected": "văn bản đã sửa", 
+  "changes": [
+    {"from": "từ sai", "to": "từ đúng", "reason": "lỗi chính tả"},
+    {"from": "câu sai ngữ pháp", "to": "câu đúng ngữ pháp", "reason": "sửa ngữ pháp"}
+  ]
+}`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -43,6 +56,7 @@ Trả về văn bản đã được kiểm tra và sửa lỗi theo chuẩn báo
       body: JSON.stringify({
         model: 'gpt-3.5-turbo',
         messages: [{ role: 'user', content: prompt }],
+        response_format: { type: "json_object" }
       }),
     });
 
@@ -51,9 +65,23 @@ Trả về văn bản đã được kiểm tra và sửa lỗi theo chuẩn báo
     }
 
     const data = await response.json();
-    const correctedText = data.choices[0].message.content;
-
-    res.status(200).json({ correctedText });
+    const responseContent = data.choices[0].message.content;
+    
+    try {
+      const parsedResult = JSON.parse(responseContent);
+      res.status(200).json({
+        original: parsedResult.original || text,
+        corrected: parsedResult.corrected,
+        changes: parsedResult.changes || []
+      });
+    } catch (parseError) {
+      // Fallback if JSON parsing fails
+      res.status(200).json({
+        original: text,
+        corrected: responseContent,
+        changes: []
+      });
+    }
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to check spelling' });

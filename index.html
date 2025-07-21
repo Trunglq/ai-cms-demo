@@ -116,8 +116,20 @@
                         </select>
                         <button id="checkBtn" class="btn btn-primary">Kiểm tra</button>
                         <div class="mt-3">
-                            <label class="form-label">Văn bản đã sửa:</label>
-                            <div id="outputText" class="border p-3 bg-light"></div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="form-label">Văn bản gốc:</label>
+                                    <div id="originalText" class="border p-3 bg-light" style="min-height: 100px;"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Văn bản đã sửa:</label>
+                                    <div id="correctedText" class="border p-3 bg-light" style="min-height: 100px;"></div>
+                                </div>
+                            </div>
+                            <div class="mt-3" id="changesSection" style="display: none;">
+                                <label class="form-label">Các thay đổi đã thực hiện:</label>
+                                <div id="changesList" class="border p-3 bg-info bg-opacity-10"></div>
+                            </div>
                         </div>
                     `;
 
@@ -130,7 +142,7 @@
                             let response;
                             if (isLocal && LOCAL_OPENAI_KEY) {
                                 // Local direct call
-                                const prompt = `Kiểm tra và sửa lỗi chính tả, ngữ pháp trong văn bản tiếng ${language === 'vi' ? 'Việt' : 'Anh'} sau: ${input}. Trả về văn bản đã sửa.`;
+                                const prompt = `Kiểm tra và sửa lỗi chính tả, ngữ pháp trong văn bản tiếng ${language === 'vi' ? 'Việt' : 'Anh'} theo chuẩn báo chí. Trả về JSON với format: {"original": "văn bản gốc", "corrected": "văn bản đã sửa", "changes": [{"from": "cũ", "to": "mới", "reason": "lý do"}]}. Văn bản: ${input}`;
                                 response = await fetch('https://api.openai.com/v1/chat/completions', {
                                     method: 'POST',
                                     headers: {
@@ -139,7 +151,8 @@
                                     },
                                     body: JSON.stringify({
                                         model: 'gpt-3.5-turbo',
-                                        messages: [{ role: 'user', content: prompt }]
+                                        messages: [{ role: 'user', content: prompt }],
+                                        response_format: { type: "json_object" }
                                     })
                                 });
                             } else {
@@ -153,7 +166,70 @@
 
                             if (!response.ok) throw new Error('Error: ' + response.statusText);
                             const data = await response.json();
-                            document.getElementById('outputText').innerText = isLocal ? data.choices[0].message.content : data.correctedText;
+                            
+                            let result;
+                            if (isLocal) {
+                                try {
+                                    result = JSON.parse(data.choices[0].message.content);
+                                } catch {
+                                    result = { original: input, corrected: data.choices[0].message.content, changes: [] };
+                                }
+                            } else {
+                                result = data;
+                            }
+
+                            // Function to highlight differences
+                            function highlightChanges(original, corrected, changes) {
+                                let highlightedOriginal = original;
+                                let highlightedCorrected = corrected;
+                                
+                                if (changes && changes.length > 0) {
+                                    changes.forEach(change => {
+                                        if (change.from && change.to) {
+                                            // Highlight in original (red background for errors)
+                                            highlightedOriginal = highlightedOriginal.replace(
+                                                new RegExp(escapeRegex(change.from), 'g'),
+                                                `<span style="background-color: #ffebee; text-decoration: line-through;">${change.from}</span>`
+                                            );
+                                            // Highlight in corrected (green background for corrections)
+                                            highlightedCorrected = highlightedCorrected.replace(
+                                                new RegExp(escapeRegex(change.to), 'g'),
+                                                `<span style="background-color: #e8f5e8; font-weight: bold;">${change.to}</span>`
+                                            );
+                                        }
+                                    });
+                                }
+                                
+                                return { highlightedOriginal, highlightedCorrected };
+                            }
+
+                            function escapeRegex(string) {
+                                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                            }
+
+                            const { highlightedOriginal, highlightedCorrected } = highlightChanges(
+                                result.original, result.corrected, result.changes
+                            );
+
+                            document.getElementById('originalText').innerHTML = highlightedOriginal;
+                            document.getElementById('correctedText').innerHTML = highlightedCorrected;
+
+                            // Show changes list
+                            if (result.changes && result.changes.length > 0) {
+                                const changesList = document.getElementById('changesList');
+                                const changesHtml = result.changes.map((change, index) => `
+                                    <div class="mb-2">
+                                        <strong>${index + 1}.</strong> 
+                                        <span class="text-danger">"${change.from}"</span> → 
+                                        <span class="text-success">"${change.to}"</span>
+                                        <br><small class="text-muted">Lý do: ${change.reason}</small>
+                                    </div>
+                                `).join('');
+                                changesList.innerHTML = changesHtml;
+                                document.getElementById('changesSection').style.display = 'block';
+                            } else {
+                                document.getElementById('changesSection').style.display = 'none';
+                            }
                         } catch (error) {
                             console.error(error);
                             alert('Lỗi khi kiểm tra: ' + error.message);
