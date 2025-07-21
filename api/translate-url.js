@@ -319,21 +319,23 @@ async function advancedCrawler(url, hostname) {
         }
       }
       else if (hostname.includes('dantri')) {
-        // Dân trí selectors
+        // Dân trí selectors - Updated based on actual site structure
         const titleSelectors = [
-          'h1.title-page-detail',
-          '.detail-title h1',
-          'h1.dt-text-title',
-          '.article-title h1',
-          'h1'
+          'h1',
+          '.title-page-detail h1',
+          '.detail-title',
+          'h1.title',
+          '.article-title'
         ];
         
         const contentSelectors = [
-          '.singular-content',
-          '.detail-content',
-          '.article-content',
-          '.dt-text-content',
-          '.content-body'
+          '.singular-content p',
+          '.detail-content p',
+          '.article-body p',
+          '.content-detail p',
+          'article p',
+          '.post-content p',
+          '.entry-content p'
         ];
 
         for (const selector of titleSelectors) {
@@ -344,14 +346,22 @@ async function advancedCrawler(url, hostname) {
           }
         }
 
+        // For Dantri: Since contentSelectors already target paragraphs, get them directly
         for (const selector of contentSelectors) {
-          const el = document.querySelector(selector);
-          if (el) {
-            const paragraphs = Array.from(el.querySelectorAll('p')).map(p => p.textContent.trim()).filter(text => text.length > 20);
-            if (paragraphs.length > 0) {
-              content = paragraphs.join('\n\n');
-              break;
-            }
+          const paragraphs = Array.from(document.querySelectorAll(selector))
+            .map(p => p.textContent.trim())
+            .filter(text => {
+              if (text.length < 30) return false;
+              if (text.includes('©') || text.includes('Copyright')) return false;
+              if (text.includes('Tags:') || text.includes('Từ khóa:')) return false;
+              if (text.includes('Chia sẻ:') || text.includes('Share:')) return false;
+              if (text.match(/^\d+\/\d+\/\d+/)) return false;
+              return true;
+            });
+          
+          if (paragraphs.length >= 2) {
+            content = paragraphs.join('\n\n');
+            break;
           }
         }
       }
@@ -444,8 +454,26 @@ async function basicExtraction(url, hostname) {
     title = $('.ArticleTitle').text().trim() || $('.detail-title h1').text().trim() || $('h1').first().text().trim();
     content = $('.ArticleContent').text().trim() || $('.detail-content-body').text().trim();
   } else if (hostname.includes('dantri')) {
-    title = $('h1.title-page-detail').text().trim() || $('.detail-title h1').text().trim() || $('h1.dt-text-title').text().trim() || $('h1').first().text().trim();
-    content = $('.singular-content').text().trim() || $('.detail-content').text().trim() || $('.dt-text-content').text().trim();
+    title = $('h1').first().text().trim() || $('.title-page-detail').text().trim() || $('.detail-title').text().trim();
+    
+    // Try different content extraction methods for Dantri
+    const contentSelectors = ['.singular-content p', '.detail-content p', 'article p', '.content-detail p', '.post-content p'];
+    for (const selector of contentSelectors) {
+      const paragraphs = $(selector).map((i, el) => $(el).text().trim()).get().filter(text => text.length > 30);
+      if (paragraphs.length >= 2) {
+        content = paragraphs.join('\n\n');
+        break;
+      }
+    }
+    
+    // Fallback: try to get all paragraphs
+    if (!content) {
+      const allParagraphs = $('p').map((i, el) => $(el).text().trim()).get()
+        .filter(text => text.length > 30 && !text.includes('©') && !text.includes('Tags:'));
+      if (allParagraphs.length >= 2) {
+        content = allParagraphs.slice(0, 10).join('\n\n'); // Take first 10 paragraphs
+      }
+    }
   } else if (hostname.includes('thanhnien')) {
     title = $('.detail-title h1').text().trim() || $('.article-title').text().trim() || $('h1').first().text().trim();
     content = $('.detail-cmain').text().trim() || $('.article-body').text().trim();
