@@ -9,8 +9,12 @@ export default async function handler(req, res) {
     // Get trending topics from multiple sources
     const topics = await fetchHotTopics();
     
+    // Generate category statistics
+    const categoryStats = generateCategoryStats(topics);
+    
     res.json({
       topics: topics,
+      categoryStats: categoryStats,
       lastUpdated: new Date().toISOString(),
       sources: ['Google Trends', 'Vietnamese News', 'Social Media', 'Tech Topics']
     });
@@ -142,6 +146,41 @@ async function generateTechTrendingTopics() {
       source: "Tech Trends" 
     }
   ];
+}
+
+// Generate category statistics
+function generateCategoryStats(topics) {
+  const stats = {
+    total: topics.length,
+    categories: {},
+    sources: {},
+    scoreRanges: {
+      'super_hot': 0,  // 90%+
+      'hot': 0,        // 80-89%
+      'trending': 0    // 70-79%
+    }
+  };
+
+  topics.forEach(topic => {
+    // Count by category
+    const category = topic.category;
+    stats.categories[category] = (stats.categories[category] || 0) + 1;
+    
+    // Count by source
+    const source = topic.source;
+    stats.sources[source] = (stats.sources[source] || 0) + 1;
+    
+    // Count by score range
+    if (topic.score >= 90) {
+      stats.scoreRanges.super_hot++;
+    } else if (topic.score >= 80) {
+      stats.scoreRanges.hot++;
+    } else {
+      stats.scoreRanges.trending++;
+    }
+  });
+
+  return stats;
 }
 
 // Generate Vietnamese-specific trending topics
