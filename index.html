@@ -55,6 +55,38 @@
             color: #212529;
             font-weight: 600;
         }
+        .hot-topic-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #dee2e6;
+        }
+        .hot-topic-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border-color: #0d6efd;
+        }
+        .hot-topic-card.selected {
+            border: 2px solid #0d6efd !important;
+            background-color: #f8f9ff;
+            transform: translateY(-1px);
+            box-shadow: 0 6px 12px rgba(13, 110, 253, 0.15);
+        }
+        .hot-topic-card .badge {
+            font-size: 10px;
+        }
+        .hot-topic-card .card-title {
+            font-size: 14px;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+        .hot-topic-card .card-text {
+            font-size: 11px;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
     </style>
 </head>
 <body>
@@ -713,7 +745,7 @@
                                 <div class="mb-4">
                                     <label class="form-label fw-bold">🎯 Nguồn nội dung:</label>
                                     <div class="row">
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="inputMethod" id="fromTopic" value="topic" checked>
                                                 <label class="form-check-label" for="fromTopic">
@@ -721,7 +753,15 @@
                                                 </label>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="inputMethod" id="fromHotTopics" value="hottopics">
+                                                <label class="form-check-label" for="fromHotTopics">
+                                                    🔥 Chủ đề Hot
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="inputMethod" id="fromArticles" value="articles">
                                                 <label class="form-check-label" for="fromArticles">
@@ -729,7 +769,7 @@
                                                 </label>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="inputMethod" id="fromWord" value="word">
                                                 <label class="form-check-label" for="fromWord">
@@ -749,6 +789,35 @@
                                     <div class="mb-3">
                                         <label for="topicContext" class="form-label">📝 Bối cảnh/Góc độ (tùy chọn):</label>
                                         <textarea class="form-control" id="topicContext" rows="2" placeholder="Thêm bối cảnh, góc độ tiếp cận, hoặc thông tin cần lưu ý..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Hot Topics Input -->
+                                <div id="hotTopicsInput" class="input-section" style="display: none;">
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                            <label class="form-label">🔥 Top 10 Chủ Đề Hot Hiện Tại:</label>
+                                            <button id="refreshHotTopicsBtn" class="btn btn-outline-primary btn-sm">🔄 Refresh Topics</button>
+                                        </div>
+                                        <div id="hotTopicsLoading" class="text-center py-3" style="display: none;">
+                                            <div class="spinner-border text-primary" role="status">
+                                                <span class="visually-hidden">Đang tải...</span>
+                                            </div>
+                                            <p class="mt-2">Đang lấy trending topics từ Google Trends & Social Media...</p>
+                                        </div>
+                                        <div id="hotTopicsList" class="row">
+                                            <!-- Hot topics will be populated here -->
+                                        </div>
+                                        <div class="mt-3">
+                                            <label for="selectedTopicDetails" class="form-label">📝 Chi tiết chủ đề đã chọn:</label>
+                                            <div id="selectedTopicDisplay" class="alert alert-info" style="display: none;">
+                                                <strong id="selectedTopicTitle">Chưa chọn chủ đề</strong>
+                                                <p id="selectedTopicDescription" class="mb-1"></p>
+                                                <small class="text-muted">Trend score: <span id="selectedTopicScore">-</span> | Source: <span id="selectedTopicSource">-</span></small>
+                                            </div>
+                                            <textarea class="form-control" id="selectedTopicDetails" rows="3" placeholder="Góc độ và bối cảnh bổ sung cho chủ đề Hot (tùy chọn)..." readonly></textarea>
+                                            <div class="form-text">💡 Chọn một chủ đề Hot ở trên, sau đó có thể thêm góc độ riêng</div>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -891,6 +960,9 @@
                     
                     if (this.value === 'topic') {
                         document.getElementById('topicInput').style.display = 'block';
+                    } else if (this.value === 'hottopics') {
+                        document.getElementById('hotTopicsInput').style.display = 'block';
+                        loadHotTopics(); // Load hot topics when selected
                     } else if (this.value === 'articles') {
                         document.getElementById('articlesInput').style.display = 'block';
                     } else if (this.value === 'word') {
@@ -968,6 +1040,17 @@
                             alert('Vui lòng nhập chủ đề bài viết!');
                             return;
                         }
+                    } else if (inputMethod === 'hottopics') {
+                        const selectedTopic = document.querySelector('.hot-topic-card.selected');
+                        if (!selectedTopic) {
+                            alert('Vui lòng chọn một chủ đề Hot từ danh sách!');
+                            return;
+                        }
+                        inputContent = selectedTopic.dataset.title;
+                        const topicDescription = selectedTopic.dataset.description;
+                        const additionalContext = document.getElementById('selectedTopicDetails').value.trim();
+                        inputContext = `${topicDescription}${additionalContext ? '\nGóc độ bổ sung: ' + additionalContext : ''}`;
+                        console.log('Hot topic selected:', inputContent, 'Context:', inputContext);
                     } else if (inputMethod === 'articles') {
                         const articles = Array.from(document.querySelectorAll('.article-content'))
                             .map(textarea => textarea.value.trim())
@@ -1021,6 +1104,114 @@
                     btn.innerHTML = originalText;
                 }
             });
+
+            // Hot Topics functionality
+            document.getElementById('refreshHotTopicsBtn').addEventListener('click', loadHotTopics);
+        }
+
+        // Load hot topics from API
+        async function loadHotTopics() {
+            const loadingDiv = document.getElementById('hotTopicsLoading');
+            const topicsList = document.getElementById('hotTopicsList');
+            
+            try {
+                loadingDiv.style.display = 'block';
+                topicsList.innerHTML = '';
+                
+                const response = await fetch('/api/hot-topics', {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to fetch hot topics');
+                }
+                
+                const data = await response.json();
+                displayHotTopics(data.topics);
+                
+            } catch (error) {
+                console.error('Hot Topics Error:', error);
+                topicsList.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-warning">
+                            ⚠️ Không thể tải chủ đề Hot. <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Thử lại</button>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        // Display hot topics in grid
+        function displayHotTopics(topics) {
+            const topicsList = document.getElementById('hotTopicsList');
+            
+            if (!topics || topics.length === 0) {
+                topicsList.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            📋 Không có chủ đề Hot nào. <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Tải lại</button>
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+            
+            const topicsHTML = topics.map((topic, index) => `
+                <div class="col-md-6 mb-3">
+                    <div class="card hot-topic-card h-100" 
+                         data-title="${topic.title}"
+                         data-description="${topic.description}"
+                         data-score="${topic.score}"
+                         data-source="${topic.source}"
+                         onclick="selectHotTopic(this)">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <span class="badge bg-danger">#${index + 1}</span>
+                                <small class="text-muted">${topic.source}</small>
+                            </div>
+                            <h6 class="card-title">${topic.title}</h6>
+                            <p class="card-text text-muted small">${topic.description}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-success">🔥 Trend: ${topic.score}%</small>
+                                <small class="text-muted">${topic.category}</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            topicsList.innerHTML = topicsHTML;
+        }
+
+        // Select hot topic
+        window.selectHotTopic = function(card) {
+            // Remove previous selection
+            document.querySelectorAll('.hot-topic-card').forEach(c => {
+                c.classList.remove('selected', 'border-primary');
+            });
+            
+            // Select current card
+            card.classList.add('selected', 'border-primary');
+            
+            // Update details
+            const title = card.dataset.title;
+            const description = card.dataset.description;
+            const score = card.dataset.score;
+            const source = card.dataset.source;
+            
+            document.getElementById('selectedTopicTitle').textContent = title;
+            document.getElementById('selectedTopicDescription').textContent = description;
+            document.getElementById('selectedTopicScore').textContent = score + '%';
+            document.getElementById('selectedTopicSource').textContent = source;
+            document.getElementById('selectedTopicDisplay').style.display = 'block';
+            
+            // Enable context input
+            const contextInput = document.getElementById('selectedTopicDetails');
+            contextInput.readOnly = false;
+            contextInput.placeholder = 'Thêm góc độ, bối cảnh riêng cho chủ đề "' + title + '"...';
         }
 
         function displayAIWritingResults(result, outputType) {
