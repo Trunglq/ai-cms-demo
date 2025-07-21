@@ -53,47 +53,217 @@ module.exports = async (req, res) => {
       // VnExpress specific extraction
       title = $('h1.title-detail').text().trim() || $('h1').first().text().trim();
       content = $('.fck_detail').text().trim() || $('.sidebar_1 .fck_detail').text().trim();
+      console.log('VnExpress extraction:', { titleLength: title.length, contentLength: content.length });
     } else if (hostname.includes('vietnamnet')) {
       // VietnamNet specific extraction
       title = $('.ArticleTitle').text().trim() || $('.detail-title h1').text().trim() || $('.maincontent h1').text().trim();
       content = $('.ArticleContent').text().trim() || $('.maincontent .ArticleContent').text().trim() || $('.detail-content-body').text().trim();
+      console.log('VietnamNet extraction:', { titleLength: title.length, contentLength: content.length });
     } else if (hostname.includes('vneconomy')) {
       // VnEconomy specific extraction
       title = $('.detail-title').text().trim() || $('.article-header h1').text().trim() || $('.entry-header h1').text().trim();
       content = $('.detail-content .content').text().trim() || $('.article-content .content').text().trim() || $('.post-content-inner').text().trim();
+      console.log('VnEconomy extraction:', { titleLength: title.length, contentLength: content.length });
     } else if (hostname.includes('zing')) {
       // Zing News specific extraction
       title = $('.the-article-header h1').text().trim() || $('.article-header .title').text().trim();
       content = $('.the-article-body').text().trim() || $('.article-body .content').text().trim() || $('.inner-article').text().trim();
+      console.log('Zing extraction:', { titleLength: title.length, contentLength: content.length });
     } else if (hostname.includes('dantri')) {
       // Dan Tri specific extraction
       title = $('.dt-news__title').text().trim() || $('.e-magazine__title').text().trim();
       content = $('.dt-news__content').text().trim() || $('.e-magazine__body').text().trim() || $('.singular-content').text().trim();
+      console.log('Dan Tri extraction:', { titleLength: title.length, contentLength: content.length });
     } else if (hostname.includes('24h')) {
       // 24h specific extraction
       title = $('.cate-24h-arti-title').text().trim() || $('.title-news').text().trim();
       content = $('.cate-24h-arti-txt-deta').text().trim() || $('.cate-24h-foot-arti-deta-info').text().trim();
+      console.log('24h extraction:', { titleLength: title.length, contentLength: content.length });
     }
+
+    console.log(`After site-specific extraction: title="${title.substring(0, 100)}", content length=${content.length}`);
 
     // If site-specific extraction didn't work, use generic extraction
     if (!title) {
+      const titleSelectors = [
+        'h1', 
+        '.headline', 
+        '.title', 
+        '.article-title', 
+        '[data-testid="headline"]', 
+        'h1.story-title',
+        // Vietnamese sites
+        'h1.title-detail',           // VnExpress
+        '.title_news_detail h1',     // Tuoi Tre
+        '.article-title h1',         // Thanh Nien
+        '.entry-title',              // Generic WordPress
+        '.post-title',
+        '.news-title',
+        'h1.title',
+        // VietnamNet specific
+        '.ArticleTitle',             // VietnamNet
+        '.detail-title h1',          // VietnamNet
+        '.maincontent h1',           // VietnamNet
+        // VnEconomy specific
+        '.detail-title',             // VnEconomy
+        '.article-header h1',        // VnEconomy
+        '.entry-header h1',          // VnEconomy
+        // Zing News
+        '.the-article-header h1',    // Zing News
+        '.article-header .title',    // Zing News
+        // Dan Tri
+        '.dt-news__title',           // Dan Tri
+        '.e-magazine__title',        // Dan Tri
+        // 24h.com.vn
+        '.cate-24h-arti-title',      // 24h
+        '.title-news',               // 24h
+        // More generic
+        '.page-title',
+        '.content-title',
+        '.main-title'
+      ];
+
       for (const selector of titleSelectors) {
         const titleElement = $(selector).first();
         if (titleElement.length && titleElement.text().trim()) {
           title = titleElement.text().trim();
+          console.log(`Found title with selector: ${selector}`);
           break;
         }
       }
     }
 
     if (!content || content.length < 100) {
+      console.log('Starting generic content extraction...');
+      
+      const contentSelectors = [
+        '.article-body',
+        '.story-body',
+        '.post-content',
+        '.entry-content',
+        '.article-content',
+        '[data-testid="article-body"]',
+        '.ArticleBody',
+        '.StoryBodyCompanionColumn',
+        // Vietnamese sites specific
+        '.fck_detail',               // VnExpress main content
+        '.sidebar_1 .fck_detail',    // VnExpress alternative
+        '.content_detail',           // Generic Vietnamese
+        '.detail-content',           // Tuoi Tre, Thanh Nien
+        '.article-content-detail',   // Some Vietnamese sites
+        '.news-content',
+        '.post-body',
+        '.entry-content',
+        // VietnamNet specific
+        '.ArticleContent',           // VietnamNet main
+        '.maincontent .ArticleContent', // VietnamNet alternative
+        '.detail-content-body',      // VietnamNet 
+        '.content-article-detail',   // VietnamNet
+        // VnEconomy specific  
+        '.detail-content .content',  // VnEconomy
+        '.article-content .content', // VnEconomy alternative
+        '.entry-content .content',   // VnEconomy
+        '.post-content-inner',       // VnEconomy
+        // Zing News
+        '.the-article-body',         // Zing News
+        '.article-body .content',    // Zing News
+        '.inner-article',            // Zing News
+        // Dan Tri
+        '.dt-news__content',         // Dan Tri
+        '.e-magazine__body',         // Dan Tri
+        '.singular-content',         // Dan Tri
+        // 24h.com.vn
+        '.cate-24h-foot-arti-deta-info', // 24h
+        '.cate-24h-arti-txt-deta',   // 24h
+        // Cafe F
+        '.detail-content .content-detail', // Cafe F
+        '.knswli-detail-content',    // Cafe F
+        // Generic patterns
+        'article .content',
+        '.main-content .content',
+        '.article-wrapper .content',
+        '#content-detail',
+        '.content-article',
+        '.post-entry',
+        '.entry-body',
+        '.article-text',
+        '.news-body',
+        '.story-content'
+      ];
+
       for (const selector of contentSelectors) {
         const contentElement = $(selector);
         if (contentElement.length) {
-          content = contentElement.text().trim();
-          if (content.length > 100) { // Only accept if substantial content
+          const extracted = contentElement.text().trim();
+          console.log(`Trying selector "${selector}": found ${extracted.length} chars`);
+          if (extracted.length > 100) { // Only accept if substantial content
+            content = extracted;
+            console.log(`SUCCESS: Using selector "${selector}" with ${content.length} characters`);
             break;
           }
+        }
+      }
+    }
+
+    // Enhanced fallback: try to get paragraphs with more specific targeting
+    if (!content || content.length < 100) {
+      console.log('Using enhanced paragraph fallback for content extraction...');
+      
+      // Remove unwanted elements first
+      $('script, style, nav, header, footer, .advertisement, .ads, .social-share, .related-news, .sidebar, .comment, .tag, .category-list').remove();
+      
+      // Try different paragraph extraction strategies
+      const fallbackSelectors = [
+        // Generic article patterns
+        'article p',
+        'main p', 
+        '.content p',
+        '.detail p',
+        '.article p',
+        '.post p',
+        // Vietnamese specific patterns
+        'div[class*="content"] p',
+        'div[class*="detail"] p',
+        'div[class*="article"] p',
+        'div[class*="body"] p',
+        'div[class*="text"] p',
+        // Site-specific fallbacks
+        '.maincontent p',            // VietnamNet
+        '.ArticleContent p',         // VietnamNet
+        '.detail-content p',         // VnEconomy, others
+        '.the-article-body p',       // Zing
+        '.dt-news__content p',       // Dan Tri
+        '.singular-content p',       // Dan Tri
+        '.cate-24h-arti-txt-deta p', // 24h
+        '.knswli-detail-content p',  // Cafe F
+        // More generic
+        '.entry p',
+        '.story p',
+        '.news p',
+        '#content p',
+        // Very broad fallbacks
+        'p'  // All paragraphs as last resort
+      ];
+      
+      for (const selector of fallbackSelectors) {
+        const paragraphs = $(selector).map((i, el) => {
+          const text = $(el).text().trim();
+          // Filter out navigation, ads, short texts
+          if (text.length < 30) return null; // Increased minimum length
+          if (text.includes('Theo ') && text.length < 50) return null; // Skip source attribution
+          if (text.includes('Tags:') || text.includes('Từ khóa:')) return null;
+          if (text.includes('Chia sẻ:') || text.includes('Share:')) return null;
+          if (text.match(/^\d+\/\d+\/\d+/)) return null; // Skip dates
+          if (text.includes('Xem thêm:') || text.includes('Liên quan:')) return null;
+          return text;
+        }).get().filter(Boolean);
+        
+        console.log(`Selector "${selector}": found ${paragraphs.length} valid paragraphs`);
+        
+        if (paragraphs.length >= 2) { // Need at least 2 substantial paragraphs
+          content = paragraphs.join('\n\n');
+          console.log(`SUCCESS: Found content using selector: ${selector}, paragraphs: ${paragraphs.length}, total length: ${content.length}`);
+          break;
         }
       }
     }
