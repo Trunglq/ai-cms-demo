@@ -55,10 +55,62 @@ module.exports = async (req, res) => {
       content = $('.fck_detail').text().trim() || $('.sidebar_1 .fck_detail').text().trim();
       console.log('VnExpress extraction:', { titleLength: title.length, contentLength: content.length });
     } else if (hostname.includes('vietnamnet')) {
-      // VietnamNet specific extraction
-      title = $('.ArticleTitle').text().trim() || $('.detail-title h1').text().trim() || $('.maincontent h1').text().trim();
-      content = $('.ArticleContent').text().trim() || $('.maincontent .ArticleContent').text().trim() || $('.detail-content-body').text().trim();
-      console.log('VietnamNet extraction:', { titleLength: title.length, contentLength: content.length });
+      // VietnamNet specific extraction - Updated selectors for 2024
+      console.log('Extracting from VietnamNet...');
+      
+      // Try multiple title selectors for VietnamNet
+      const titleAttempts = [
+        $('.ArticleTitle').text().trim(),
+        $('.detail-title h1').text().trim(),
+        $('.maincontent h1').text().trim(),
+        $('.article-title').text().trim(),
+        $('.title-detail').text().trim(),
+        $('h1.title').text().trim(),
+        $('.content-detail h1').text().trim(),
+        $('h1').first().text().trim()
+      ];
+      
+      for (let i = 0; i < titleAttempts.length; i++) {
+        if (titleAttempts[i]) {
+          title = titleAttempts[i];
+          console.log(`VietnamNet title found with attempt ${i}: ${title.substring(0, 50)}`);
+          break;
+        }
+      }
+      
+      // Try multiple content selectors for VietnamNet
+      const contentAttempts = [
+        $('.ArticleContent').text().trim(),
+        $('.maincontent .ArticleContent').text().trim(),
+        $('.detail-content-body').text().trim(),
+        $('.content-article-detail').text().trim(),
+        $('.article-content').text().trim(),
+        $('.content-detail').text().trim(),
+        $('.post-content').text().trim(),
+        $('.entry-content').text().trim(),
+        $('.article-body').text().trim(),
+        $('.content-body').text().trim(),
+        $('.main-content').text().trim()
+      ];
+      
+      for (let i = 0; i < contentAttempts.length; i++) {
+        if (contentAttempts[i] && contentAttempts[i].length > 100) {
+          content = contentAttempts[i];
+          console.log(`VietnamNet content found with attempt ${i}: ${content.length} chars`);
+          break;
+        }
+      }
+      
+      // Debug: Show what elements actually exist
+      console.log('VietnamNet elements found:');
+      console.log('- .ArticleTitle:', $('.ArticleTitle').length);
+      console.log('- .ArticleContent:', $('.ArticleContent').length);
+      console.log('- .maincontent:', $('.maincontent').length);
+      console.log('- .detail-content-body:', $('.detail-content-body').length);
+      console.log('- .article-content:', $('.article-content').length);
+      console.log('- .content-detail:', $('.content-detail').length);
+      
+      console.log('VietnamNet extraction result:', { titleLength: title.length, contentLength: content.length });
     } else if (hostname.includes('vneconomy')) {
       // VnEconomy specific extraction
       title = $('.detail-title').text().trim() || $('.article-header h1').text().trim() || $('.entry-header h1').text().trim();
@@ -210,60 +262,109 @@ module.exports = async (req, res) => {
       console.log('Using enhanced paragraph fallback for content extraction...');
       
       // Remove unwanted elements first
-      $('script, style, nav, header, footer, .advertisement, .ads, .social-share, .related-news, .sidebar, .comment, .tag, .category-list').remove();
+      $('script, style, nav, header, footer, .advertisement, .ads, .social-share, .related-news, .sidebar, .comment, .tag, .category-list, .menu, .navigation').remove();
       
-      // Try different paragraph extraction strategies
-      const fallbackSelectors = [
-        // Generic article patterns
-        'article p',
-        'main p', 
-        '.content p',
-        '.detail p',
-        '.article p',
-        '.post p',
-        // Vietnamese specific patterns
-        'div[class*="content"] p',
-        'div[class*="detail"] p',
-        'div[class*="article"] p',
-        'div[class*="body"] p',
-        'div[class*="text"] p',
-        // Site-specific fallbacks
-        '.maincontent p',            // VietnamNet
-        '.ArticleContent p',         // VietnamNet
-        '.detail-content p',         // VnEconomy, others
-        '.the-article-body p',       // Zing
-        '.dt-news__content p',       // Dan Tri
-        '.singular-content p',       // Dan Tri
-        '.cate-24h-arti-txt-deta p', // 24h
-        '.knswli-detail-content p',  // Cafe F
-        // More generic
-        '.entry p',
-        '.story p',
-        '.news p',
-        '#content p',
-        // Very broad fallbacks
-        'p'  // All paragraphs as last resort
-      ];
+      // For Vietnamese sites, try more aggressive extraction
+      if (hostname.includes('vietnamnet') || hostname.includes('vnexpress') || hostname.includes('vneconomy')) {
+        console.log('Using Vietnamese-specific aggressive extraction...');
+        
+        // Try to find the main content container first
+        const mainContainers = ['main', 'article', '.main-content', '.content', '.detail', '.article-detail', '.post', '.entry'];
+        
+        for (const container of mainContainers) {
+          const containerEl = $(container).first();
+          if (containerEl.length) {
+            console.log(`Checking container: ${container}`);
+            
+            // Remove navigation and ads from this container
+            containerEl.find('nav, .menu, .ads, .advertisement, .social, .share, .related, .tag, .category, .comment').remove();
+            
+            // Get all paragraphs from this container
+            const paragraphs = containerEl.find('p').map((i, el) => {
+              const text = $(el).text().trim();
+              
+              // More aggressive filtering for Vietnamese content
+              if (text.length < 20) return null;
+              if (text.includes('©') || text.includes('Copyright')) return null;
+              if (text.includes('Theo ') && text.length < 60) return null;
+              if (text.includes('Tags:') || text.includes('Từ khóa:')) return null;
+              if (text.includes('Chia sẻ:') || text.includes('Share:')) return null;
+              if (text.includes('Xem thêm:') || text.includes('Liên quan:')) return null;
+              if (text.includes('Đăng ký') || text.includes('Subscribe')) return null;
+              if (text.match(/^\d+\/\d+\/\d+/)) return null;
+              if (text.match(/^\d+:\d+/)) return null; // Time stamps
+              if (text.includes('Email:') || text.includes('Tel:')) return null;
+              
+              return text;
+            }).get().filter(Boolean);
+            
+            console.log(`Container ${container}: found ${paragraphs.length} valid paragraphs`);
+            
+            if (paragraphs.length >= 2) {
+              content = paragraphs.join('\n\n');
+              console.log(`SUCCESS: Aggressive extraction from ${container}, ${paragraphs.length} paragraphs, ${content.length} chars`);
+              break;
+            }
+          }
+        }
+      }
       
-      for (const selector of fallbackSelectors) {
-        const paragraphs = $(selector).map((i, el) => {
-          const text = $(el).text().trim();
-          // Filter out navigation, ads, short texts
-          if (text.length < 30) return null; // Increased minimum length
-          if (text.includes('Theo ') && text.length < 50) return null; // Skip source attribution
-          if (text.includes('Tags:') || text.includes('Từ khóa:')) return null;
-          if (text.includes('Chia sẻ:') || text.includes('Share:')) return null;
-          if (text.match(/^\d+\/\d+\/\d+/)) return null; // Skip dates
-          if (text.includes('Xem thêm:') || text.includes('Liên quan:')) return null;
-          return text;
-        }).get().filter(Boolean);
+      // If still no content, try the original fallback selectors
+      if (!content || content.length < 100) {
+        // Try different paragraph extraction strategies
+        const fallbackSelectors = [
+          // Generic article patterns
+          'article p',
+          'main p', 
+          '.content p',
+          '.detail p',
+          '.article p',
+          '.post p',
+          // Vietnamese specific patterns
+          'div[class*="content"] p',
+          'div[class*="detail"] p',
+          'div[class*="article"] p',
+          'div[class*="body"] p',
+          'div[class*="text"] p',
+          // Site-specific fallbacks
+          '.maincontent p',            // VietnamNet
+          '.ArticleContent p',         // VietnamNet
+          '.detail-content p',         // VnEconomy, others
+          '.the-article-body p',       // Zing
+          '.dt-news__content p',       // Dan Tri
+          '.singular-content p',       // Dan Tri
+          '.cate-24h-arti-txt-deta p', // 24h
+          '.knswli-detail-content p',  // Cafe F
+          // More generic
+          '.entry p',
+          '.story p',
+          '.news p',
+          '#content p',
+          // Very broad fallbacks
+          'div p',  // All divs with paragraphs
+          'p'       // All paragraphs as last resort
+        ];
         
-        console.log(`Selector "${selector}": found ${paragraphs.length} valid paragraphs`);
-        
-        if (paragraphs.length >= 2) { // Need at least 2 substantial paragraphs
-          content = paragraphs.join('\n\n');
-          console.log(`SUCCESS: Found content using selector: ${selector}, paragraphs: ${paragraphs.length}, total length: ${content.length}`);
-          break;
+        for (const selector of fallbackSelectors) {
+          const paragraphs = $(selector).map((i, el) => {
+            const text = $(el).text().trim();
+            // Filter out navigation, ads, short texts
+            if (text.length < 30) return null; // Increased minimum length
+            if (text.includes('Theo ') && text.length < 50) return null; // Skip source attribution
+            if (text.includes('Tags:') || text.includes('Từ khóa:')) return null;
+            if (text.includes('Chia sẻ:') || text.includes('Share:')) return null;
+            if (text.match(/^\d+\/\d+\/\d+/)) return null; // Skip dates
+            if (text.includes('Xem thêm:') || text.includes('Liên quan:')) return null;
+            return text;
+          }).get().filter(Boolean);
+          
+          console.log(`Selector "${selector}": found ${paragraphs.length} valid paragraphs`);
+          
+          if (paragraphs.length >= 2) { // Need at least 2 substantial paragraphs
+            content = paragraphs.join('\n\n');
+            console.log(`SUCCESS: Found content using selector: ${selector}, paragraphs: ${paragraphs.length}, total length: ${content.length}`);
+            break;
+          }
         }
       }
     }
