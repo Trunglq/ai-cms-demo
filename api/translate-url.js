@@ -134,7 +134,7 @@ async function advancedCrawler(url, hostname) {
 
       // Site-specific extraction logic
       if (hostname.includes('vnexpress')) {
-        // VnExpress selectors
+        // VnExpress selectors - Updated for better extraction
         const titleSelectors = [
           'h1.title-detail',
           '.title-detail h1',
@@ -144,11 +144,13 @@ async function advancedCrawler(url, hostname) {
         ];
         
         const contentSelectors = [
-          '.fck_detail',
-          '.sidebar_1 .fck_detail',
-          '.Normal',
-          'article .fck_detail',
-          '.content_detail .Normal'
+          '.fck_detail p',
+          '.sidebar_1 .fck_detail p',
+          '.Normal p',
+          'article .fck_detail p',
+          '.content_detail .Normal p',
+          '.content_detail p',
+          'article p'
         ];
 
         // Extract title
@@ -160,21 +162,28 @@ async function advancedCrawler(url, hostname) {
           }
         }
 
-        // Extract content
+        // Extract content - Updated for VnExpress
         for (const selector of contentSelectors) {
-          const el = document.querySelector(selector);
-          if (el) {
-            // Get all paragraphs
-            const paragraphs = Array.from(el.querySelectorAll('p')).map(p => p.textContent.trim()).filter(text => text.length > 20);
-            if (paragraphs.length > 0) {
-              content = paragraphs.join('\n\n');
-              break;
-            }
+          const paragraphs = Array.from(document.querySelectorAll(selector))
+            .map(p => p.textContent.trim())
+            .filter(text => {
+              if (text.length < 30) return false;
+              if (text.includes('©') || text.includes('Copyright')) return false;
+              if (text.includes('Tags:') || text.includes('Từ khóa:')) return false;
+              if (text.includes('Chia sẻ:') || text.includes('Share:')) return false;
+              if (text.includes('VnExpress')) return false;
+              if (text.match(/^\d+\/\d+\/\d+/)) return false;
+              return true;
+            });
+          
+          if (paragraphs.length >= 2) {
+            content = paragraphs.join('\n\n');
+            break;
           }
         }
       } 
       else if (hostname.includes('vietnamnet')) {
-        // VietnamNet selectors
+        // VietnamNet selectors - Updated for better extraction
         const titleSelectors = [
           '.ArticleTitle',
           '.detail-title h1',
@@ -185,11 +194,13 @@ async function advancedCrawler(url, hostname) {
         ];
         
         const contentSelectors = [
-          '.ArticleContent',
-          '.maincontent .ArticleContent',
-          '.detail-content-body',
-          '.content-article-detail',
-          '.article-content'
+          '.ArticleContent p',
+          '.maincontent .ArticleContent p',
+          '.detail-content-body p',
+          '.content-article-detail p',
+          '.article-content p',
+          '.content-detail p',
+          'article p'
         ];
 
         // Extract title
@@ -201,15 +212,23 @@ async function advancedCrawler(url, hostname) {
           }
         }
 
-        // Extract content
+        // Extract content - Updated for VietnamNet
         for (const selector of contentSelectors) {
-          const el = document.querySelector(selector);
-          if (el) {
-            const paragraphs = Array.from(el.querySelectorAll('p')).map(p => p.textContent.trim()).filter(text => text.length > 20);
-            if (paragraphs.length > 0) {
-              content = paragraphs.join('\n\n');
-              break;
-            }
+          const paragraphs = Array.from(document.querySelectorAll(selector))
+            .map(p => p.textContent.trim())
+            .filter(text => {
+              if (text.length < 30) return false;
+              if (text.includes('©') || text.includes('Copyright')) return false;
+              if (text.includes('Tags:') || text.includes('Từ khóa:')) return false;
+              if (text.includes('Chia sẻ:') || text.includes('Share:')) return false;
+              if (text.includes('VietnamNet')) return false;
+              if (text.match(/^\d+\/\d+\/\d+/)) return false;
+              return true;
+            });
+          
+          if (paragraphs.length >= 2) {
+            content = paragraphs.join('\n\n');
+            break;
           }
         }
       }
@@ -446,13 +465,33 @@ async function basicExtraction(url, hostname) {
   let title = '';
   let content = '';
 
-  // Basic extraction logic (simplified version of previous code)
+  // Basic extraction logic - Updated with better paragraph extraction
   if (hostname.includes('vnexpress')) {
     title = $('h1.title-detail').text().trim() || $('.title-detail h1').text().trim() || $('h1').first().text().trim();
-    content = $('.fck_detail').text().trim() || $('.sidebar_1 .fck_detail').text().trim();
+    
+    // Try different content extraction methods for VnExpress
+    const contentSelectors = ['.fck_detail p', '.sidebar_1 .fck_detail p', '.content_detail p', 'article p'];
+    for (const selector of contentSelectors) {
+      const paragraphs = $(selector).map((i, el) => $(el).text().trim()).get()
+        .filter(text => text.length > 30 && !text.includes('©') && !text.includes('VnExpress'));
+      if (paragraphs.length >= 2) {
+        content = paragraphs.join('\n\n');
+        break;
+      }
+    }
   } else if (hostname.includes('vietnamnet')) {
     title = $('.ArticleTitle').text().trim() || $('.detail-title h1').text().trim() || $('h1').first().text().trim();
-    content = $('.ArticleContent').text().trim() || $('.detail-content-body').text().trim();
+    
+    // Try different content extraction methods for VietnamNet  
+    const contentSelectors = ['.ArticleContent p', '.detail-content-body p', '.content-article-detail p', 'article p'];
+    for (const selector of contentSelectors) {
+      const paragraphs = $(selector).map((i, el) => $(el).text().trim()).get()
+        .filter(text => text.length > 30 && !text.includes('©') && !text.includes('VietnamNet'));
+      if (paragraphs.length >= 2) {
+        content = paragraphs.join('\n\n');
+        break;
+      }
+    }
   } else if (hostname.includes('dantri')) {
     title = $('h1').first().text().trim() || $('.title-page-detail').text().trim() || $('.detail-title').text().trim();
     
