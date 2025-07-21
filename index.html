@@ -264,6 +264,9 @@
                             if (!response.ok) throw new Error('Error: ' + response.statusText);
                             const result = await response.json();
                             
+                            // Debug logging
+                            console.log('Spell check result:', result);
+                            
                             // Show results section
                             document.getElementById('resultsSection').style.display = 'block';
                             
@@ -435,8 +438,12 @@
                     }
                     
                     function updatePreviewFromAppliedChanges() {
+                        console.log('Updating preview from applied changes...');
                         let originalText = window.originalText;
                         let finalText = window.originalText;
+                        
+                        console.log('Original text:', originalText);
+                        console.log('Applied changes:', Array.from(window.appliedChanges));
                         
                         // Apply all selected changes with highlighting
                         const allChangesToApply = [];
@@ -474,29 +481,38 @@
                         let highlightedFinal = originalText;
                         
                         allChangesToApply.forEach(change => {
-                            const fromRegex = new RegExp(escapeRegex(change.from), 'g');
+                            // Simple exact match - avoid complex regex for Vietnamese text
+                            const exactMatch = new RegExp(escapeRegex(change.from), 'gi');
                             
                             if (change.applied) {
                                 // Apply the change to final text
-                                finalText = finalText.replace(fromRegex, change.to);
+                                finalText = finalText.replace(exactMatch, change.to);
                                 
                                 // Highlight in original (red = will be changed)
-                                highlightedOriginal = highlightedOriginal.replace(fromRegex, 
+                                highlightedOriginal = highlightedOriginal.replace(exactMatch, 
                                     `<span style="background-color: #ffebee; text-decoration: line-through; color: #c62828;">${change.from}</span>`
                                 );
                                 
-                                // Highlight in final (green = changed)
-                                highlightedFinal = highlightedFinal.replace(new RegExp(escapeRegex(change.to), 'g'), 
-                                    `<span style="background-color: #e8f5e8; font-weight: bold; color: #2e7d32;">${change.to}</span>`
-                                );
+                                // Highlight in final text - need to apply changes first, then highlight
                             } else {
                                 // Just highlight as available for change (yellow)
                                 const isError = change.type === 'error';
                                 const highlightColor = isError ? '#fff3e0' : '#f3e5f5';
                                 const borderColor = isError ? '#ff9800' : '#9c27b0';
                                 
-                                highlightedOriginal = highlightedOriginal.replace(fromRegex, 
+                                highlightedOriginal = highlightedOriginal.replace(exactMatch, 
                                     `<span style="background-color: ${highlightColor}; border: 1px solid ${borderColor}; border-radius: 2px; padding: 1px 2px;">${change.from}</span>`
+                                );
+                            }
+                        });
+                        
+                        // Apply highlighting to final text AFTER all changes are made
+                        highlightedFinal = finalText;
+                        allChangesToApply.forEach(change => {
+                            if (change.applied) {
+                                const toExactMatch = new RegExp(escapeRegex(change.to), 'gi');
+                                highlightedFinal = highlightedFinal.replace(toExactMatch, 
+                                    `<span style="background-color: #e8f5e8; font-weight: bold; color: #2e7d32;">${change.to}</span>`
                                 );
                             }
                         });
@@ -541,6 +557,14 @@
                     
                     function escapeRegex(string) {
                         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                    }
+                    
+                    // Debug function
+                    function debugPreview() {
+                        console.log('Original text:', window.originalText);
+                        console.log('Applied changes:', Array.from(window.appliedChanges));
+                        console.log('All errors:', window.allErrors);
+                        console.log('All suggestions:', window.allSuggestions);
                     }
                 } else if (feature === 'translate-url') {
                     content.innerHTML = `
