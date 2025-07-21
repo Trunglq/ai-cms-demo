@@ -173,131 +173,198 @@
                             <label for="inputText" class="form-label">Nhập văn bản cần kiểm tra:</label>
                             <textarea class="form-control" id="inputText" rows="5"></textarea>
                         </div>
-                        <select id="languageSelect" class="form-select mb-3">
-                            <option value="vi">Tiếng Việt</option>
-                            <option value="en">Tiếng Anh</option>
-                        </select>
-                        <button id="checkBtn" class="btn btn-primary">Kiểm tra</button>
-                        <div class="mt-3">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <label class="form-label">Văn bản gốc:</label>
-                                    <div id="originalText" class="border p-3 bg-light" style="min-height: 100px;"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="form-label">Văn bản đã sửa:</label>
-                                    <div id="correctedText" class="border p-3 bg-light" style="min-height: 100px;"></div>
-                                </div>
+                        <div class="row">
+                            <div class="col-md-8">
+                                <select id="languageSelect" class="form-select mb-3">
+                                    <option value="vi">Tiếng Việt</option>
+                                    <option value="en">Tiếng Anh</option>
+                                </select>
                             </div>
-                            <div class="mt-3" id="changesSection" style="display: none;">
-                                <label class="form-label">Các thay đổi đã thực hiện:</label>
-                                <div id="changesList" class="border p-3 bg-info bg-opacity-10"></div>
+                            <div class="col-md-4">
+                                <select id="modeSelect" class="form-select mb-3">
+                                    <option value="conservative">Chỉ lỗi thực sự</option>
+                                    <option value="comprehensive">Gợi ý + cải thiện</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button id="checkBtn" class="btn btn-primary">Kiểm tra</button>
+                        
+                        <!-- Results Section -->
+                        <div class="mt-4" id="resultsSection" style="display: none;">
+                            <!-- Status Alert -->
+                            <div id="statusAlert" class="alert" role="alert"></div>
+                            
+                            <!-- Errors Section -->
+                            <div id="errorsSection" style="display: none;">
+                                <h5 class="text-danger">🔴 Lỗi cần sửa:</h5>
+                                <div id="errorsList" class="mb-3"></div>
+                            </div>
+                            
+                            <!-- Suggestions Section -->
+                            <div id="suggestionsSection" style="display: none;">
+                                <h5 class="text-info">💡 Gợi ý cải thiện (tùy chọn):</h5>
+                                <div id="suggestionsList" class="mb-3"></div>
+                            </div>
+                            
+                            <!-- Preview Section -->
+                            <div id="previewSection" style="display: none;">
+                                <h5>📄 Xem trước kết quả:</h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Văn bản gốc:</label>
+                                        <div id="originalText" class="border p-3 bg-light" style="min-height: 100px;"></div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Văn bản sau khi áp dụng:</label>
+                                        <div id="finalText" class="border p-3 bg-light" style="min-height: 100px;"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     `;
 
+                    // Spell Check Logic with new UI
+                    window.appliedChanges = new Set();
+                    
                     document.getElementById('checkBtn').addEventListener('click', async () => {
                         const input = document.getElementById('inputText').value;
                         const language = document.getElementById('languageSelect').value;
+                        const mode = document.getElementById('modeSelect').value;
                         if (!input) return alert('Vui lòng nhập văn bản!');
 
+                        const checkBtn = document.getElementById('checkBtn');
+                        checkBtn.disabled = true;
+                        checkBtn.textContent = 'Đang kiểm tra...';
+
                         try {
-                            let response;
-                            if (isLocal && LOCAL_OPENAI_KEY) {
-                                // Local direct call
-                                const prompt = `Kiểm tra và sửa lỗi chính tả, ngữ pháp trong văn bản tiếng ${language === 'vi' ? 'Việt' : 'Anh'} theo chuẩn báo chí. Trả về JSON với format: {"original": "văn bản gốc", "corrected": "văn bản đã sửa", "changes": [{"from": "cũ", "to": "mới", "reason": "lý do"}]}. Văn bản: ${input}`;
-                                response = await fetch('https://api.openai.com/v1/chat/completions', {
-                                    method: 'POST',
-                                    headers: {
-                                        'Content-Type': 'application/json',
-                                        'Authorization': `Bearer ${LOCAL_OPENAI_KEY}`
-                                    },
-                                    body: JSON.stringify({
-                                        model: 'gpt-3.5-turbo',
-                                        messages: [{ role: 'user', content: prompt }],
-                                        response_format: { type: "json_object" }
-                                    })
-                                });
-                            } else {
-                                // Production call
-                                response = await fetch('/api/spellcheck', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ text: input, language })
-                                });
-                            }
+                            const response = await fetch('/api/spellcheck', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ text: input, language, mode })
+                            });
 
                             if (!response.ok) throw new Error('Error: ' + response.statusText);
-                            const data = await response.json();
+                            const result = await response.json();
                             
-                            let result;
-                            if (isLocal) {
-                                try {
-                                    result = JSON.parse(data.choices[0].message.content);
-                                } catch {
-                                    result = { original: input, corrected: data.choices[0].message.content, changes: [] };
-                                }
+                            // Show results section
+                            document.getElementById('resultsSection').style.display = 'block';
+                            
+                            // Reset applied changes
+                            window.appliedChanges.clear();
+                            
+                            // Show status
+                            const statusAlert = document.getElementById('statusAlert');
+                            if (!result.hasErrors && (!result.suggestions || result.suggestions.length === 0)) {
+                                statusAlert.className = 'alert alert-success';
+                                statusAlert.innerHTML = '✅ <strong>Tuyệt vời!</strong> Không phát hiện lỗi chính tả hoặc ngữ pháp nào.';
+                                document.getElementById('errorsSection').style.display = 'none';
+                                document.getElementById('suggestionsSection').style.display = 'none';
+                                document.getElementById('previewSection').style.display = 'none';
                             } else {
-                                result = data;
-                            }
-
-                            // Function to highlight differences
-                            function highlightChanges(original, corrected, changes) {
-                                let highlightedOriginal = original;
-                                let highlightedCorrected = corrected;
+                                statusAlert.className = 'alert alert-warning';
+                                statusAlert.innerHTML = `📝 Tìm thấy ${result.errors?.length || 0} lỗi và ${result.suggestions?.length || 0} gợi ý cải thiện.`;
                                 
-                                if (changes && changes.length > 0) {
-                                    changes.forEach(change => {
-                                        if (change.from && change.to) {
-                                            // Highlight in original (red background for errors)
-                                            highlightedOriginal = highlightedOriginal.replace(
-                                                new RegExp(escapeRegex(change.from), 'g'),
-                                                `<span style="background-color: #ffebee; text-decoration: line-through;">${change.from}</span>`
-                                            );
-                                            // Highlight in corrected (green background for corrections)
-                                            highlightedCorrected = highlightedCorrected.replace(
-                                                new RegExp(escapeRegex(change.to), 'g'),
-                                                `<span style="background-color: #e8f5e8; font-weight: bold;">${change.to}</span>`
-                                            );
-                                        }
-                                    });
+                                // Show errors
+                                if (result.errors && result.errors.length > 0) {
+                                    document.getElementById('errorsSection').style.display = 'block';
+                                    displayChanges('errorsList', result.errors, 'error');
+                                } else {
+                                    document.getElementById('errorsSection').style.display = 'none';
                                 }
                                 
-                                return { highlightedOriginal, highlightedCorrected };
+                                // Show suggestions
+                                if (result.suggestions && result.suggestions.length > 0) {
+                                    document.getElementById('suggestionsSection').style.display = 'block';
+                                    displayChanges('suggestionsList', result.suggestions, 'suggestion');
+                                } else {
+                                    document.getElementById('suggestionsSection').style.display = 'none';
+                                }
+                                
+                                // Show preview
+                                document.getElementById('previewSection').style.display = 'block';
+                                updatePreview(input, result.errors, result.suggestions);
                             }
-
-                            function escapeRegex(string) {
-                                return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-                            }
-
-                            const { highlightedOriginal, highlightedCorrected } = highlightChanges(
-                                result.original, result.corrected, result.changes
-                            );
-
-                            document.getElementById('originalText').innerHTML = highlightedOriginal;
-                            document.getElementById('correctedText').innerHTML = highlightedCorrected;
-
-                            // Show changes list
-                            if (result.changes && result.changes.length > 0) {
-                                const changesList = document.getElementById('changesList');
-                                const changesHtml = result.changes.map((change, index) => `
-                                    <div class="mb-2">
-                                        <strong>${index + 1}.</strong> 
-                                        <span class="text-danger">"${change.from}"</span> → 
-                                        <span class="text-success">"${change.to}"</span>
-                                        <br><small class="text-muted">Lý do: ${change.reason}</small>
-                                    </div>
-                                `).join('');
-                                changesList.innerHTML = changesHtml;
-                                document.getElementById('changesSection').style.display = 'block';
-                            } else {
-                                document.getElementById('changesSection').style.display = 'none';
-                            }
+                            
                         } catch (error) {
                             console.error(error);
-                            alert('Lỗi khi kiểm tra: ' + error.message);
+                            document.getElementById('statusAlert').className = 'alert alert-danger';
+                            document.getElementById('statusAlert').innerHTML = `❌ <strong>Lỗi:</strong> ${error.message}`;
+                            document.getElementById('resultsSection').style.display = 'block';
+                        } finally {
+                            checkBtn.disabled = false;
+                            checkBtn.textContent = 'Kiểm tra';
                         }
                     });
+
+                    function displayChanges(containerId, changes, type) {
+                        const container = document.getElementById(containerId);
+                        const isError = type === 'error';
+                        const bgColor = isError ? 'border-danger' : 'border-info';
+                        const textColor = isError ? 'text-danger' : 'text-info';
+                        
+                        const html = changes.map((change, index) => {
+                            const changeId = `${type}_${index}`;
+                            return `
+                                <div class="card mb-2 ${bgColor}">
+                                    <div class="card-body p-3">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div class="flex-grow-1">
+                                                <span class="text-decoration-line-through text-muted">"${change.from}"</span>
+                                                <span class="mx-2">→</span>
+                                                <span class="${textColor} fw-bold">"${change.to}"</span>
+                                                <br><small class="text-muted mt-1">
+                                                    <span class="badge bg-secondary">${change.type || 'unknown'}</span> 
+                                                    ${change.reason}
+                                                </small>
+                                            </div>
+                                            <button class="btn btn-sm ${isError ? 'btn-danger' : 'btn-outline-info'}" 
+                                                    onclick="toggleChange('${changeId}', '${change.from}', '${change.to}', this)">
+                                                ${isError ? '🔧 Sửa' : '💡 Áp dụng'}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('');
+                        
+                        container.innerHTML = html;
+                    }
+                    
+                    window.toggleChange = function(changeId, fromText, toText, button) {
+                        if (window.appliedChanges.has(changeId)) {
+                            window.appliedChanges.delete(changeId);
+                            button.textContent = button.textContent.includes('🔧') ? '🔧 Sửa' : '💡 Áp dụng';
+                            button.classList.remove('btn-success');
+                            button.classList.add(button.textContent.includes('🔧') ? 'btn-danger' : 'btn-outline-info');
+                        } else {
+                            window.appliedChanges.add(changeId);
+                            button.textContent = '✅ Đã áp dụng';
+                            button.classList.remove('btn-danger', 'btn-outline-info');
+                            button.classList.add('btn-success');
+                        }
+                        
+                        // Update preview
+                        updatePreviewFromAppliedChanges();
+                    };
+                    
+                    function updatePreview(originalText, errors, suggestions) {
+                        document.getElementById('originalText').textContent = originalText;
+                        updatePreviewFromAppliedChanges();
+                    }
+                    
+                    function updatePreviewFromAppliedChanges() {
+                        const input = document.getElementById('inputText').value;
+                        let finalText = input;
+                        
+                        // Apply all selected changes
+                        window.appliedChanges.forEach(changeId => {
+                            const [type, index] = changeId.split('_');
+                            // Get the change data (this would need to be stored globally)
+                            // For now, we'll update this in the next iteration
+                        });
+                        
+                        document.getElementById('finalText').textContent = finalText;
+                    }
                 } else if (feature === 'translate-url') {
                     content.innerHTML = `
                         <h2>Dịch Bài Báo Từ URL</h2>

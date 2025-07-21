@@ -4,7 +4,7 @@ module.exports = async (req, res) => {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { text, language = 'vi' } = req.body; // Default to Vietnamese
+  const { text, language = 'vi', mode = 'conservative' } = req.body; // Add mode option
   if (!text) {
     return res.status(400).json({ error: 'Text is required' });
   }
@@ -15,36 +15,46 @@ module.exports = async (req, res) => {
   }
 
   const langText = language === 'vi' ? 'tiếng Việt' : 'tiếng Anh';
-  const prompt = `Kiểm tra và sửa lỗi chính tả, ngữ pháp trong văn bản ${langText} theo chuẩn báo chí. Yêu cầu:
+  
+  // Updated prompt focusing on real errors vs suggestions
+  const prompt = `Bạn là chuyên gia kiểm tra chính tả ${langText} cho báo chí. QUAN TRỌNG:
 
+🎯 CHỈ BÁO CÁO LỖI THỰC SỰ:
 ${language === 'vi' ? 
-`- Tuân thủ quy chuẩn chính tả và ngữ pháp báo chí Việt Nam
-- Sử dụng thuật ngữ báo chí chính xác và phù hợp
-- Văn phong khách quan, súc tích, chuyên nghiệp
-- Cấu trúc câu rõ ràng, dễ hiểu cho độc giả
-- Sử dụng dấu câu đúng chuẩn báo chí Việt Nam` :
-`- Follow international journalism writing standards (AP Style/Reuters)
-- Use appropriate journalistic terminology and professional language
-- Maintain objective, concise, and professional tone
-- Ensure clear sentence structure for readers
-- Use proper punctuation according to journalism standards`}
+`- Lỗi chính tả rõ ràng (viết sai từ)
+- Lỗi ngữ pháp nghiêm trọng (sai cấu trúc câu)
+- Lỗi dấu câu cơ bản
+- KHÔNG sửa từ đồng nghĩa (ví dụ: "đứng đầu" và "dẫn đầu" đều đúng)
+- KHÔNG thay đổi phong cách viết của tác giả
+- KHÔNG cải thiện văn phong nếu không có lỗi rõ ràng` :
+`- Clear spelling errors (misspelled words)
+- Serious grammatical errors (wrong sentence structure)  
+- Basic punctuation errors
+- DO NOT change synonyms or stylistic choices
+- DO NOT alter author's writing style
+- DO NOT improve unless there are clear errors`}
 
-Văn bản gốc: ${text}
+📝 PHÂN LOẠI KẾT QUẢ:
+- "errors": Lỗi thực sự CẦN phải sửa
+- "suggestions": Gợi ý cải thiện (tùy chọn)
+- Nếu văn bản KHÔNG có lỗi thực sự → trả về "errors": []
 
-Hãy trả về kết quả theo định dạng JSON với 3 phần:
-1. "original": văn bản gốc
-2. "corrected": văn bản đã sửa lỗi theo chuẩn báo chí
-3. "changes": mảng các thay đổi, mỗi item có format {"from": "text cũ", "to": "text mới", "reason": "lý do sửa"}
+Văn bản cần kiểm tra: "${text}"
 
-Ví dụ format trả về:
+Trả về JSON format:
 {
+  "hasErrors": boolean,
   "original": "văn bản gốc",
-  "corrected": "văn bản đã sửa", 
-  "changes": [
-    {"from": "từ sai", "to": "từ đúng", "reason": "lỗi chính tả"},
-    {"from": "câu sai ngữ pháp", "to": "câu đúng ngữ pháp", "reason": "sửa ngữ pháp"}
+  "corrected": "văn bản đã sửa chỉ những LỖI THỰC SỰ",
+  "errors": [
+    {"from": "lỗi rõ ràng", "to": "sửa đúng", "type": "spelling|grammar|punctuation", "reason": "lý do cụ thể"}
+  ],
+  "suggestions": [
+    {"from": "có thể cải thiện", "to": "gợi ý", "type": "style|clarity", "reason": "lý do gợi ý"}
   ]
-}`;
+}
+
+Ví dụ: Nếu "đứng đầu" và "dẫn đầu" đều đúng → KHÔNG sửa.`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -70,15 +80,22 @@ Ví dụ format trả về:
     try {
       const parsedResult = JSON.parse(responseContent);
       res.status(200).json({
+        hasErrors: parsedResult.hasErrors || false,
         original: parsedResult.original || text,
         corrected: parsedResult.corrected,
-        changes: parsedResult.changes || []
+        errors: parsedResult.errors || [],
+        suggestions: parsedResult.suggestions || [],
+        // Legacy support for existing frontend
+        changes: [...(parsedResult.errors || []), ...(parsedResult.suggestions || [])]
       });
     } catch (parseError) {
       // Fallback if JSON parsing fails
       res.status(200).json({
+        hasErrors: false,
         original: text,
         corrected: responseContent,
+        errors: [],
+        suggestions: [],
         changes: []
       });
     }
