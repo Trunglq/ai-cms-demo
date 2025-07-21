@@ -1,0 +1,15 @@
+{
+  "name": "ai-cms-demo",
+  "version": "1.0.0",
+  "description": "AI CMS Demo with translation and journalism features",
+  "main": "index.html",
+  "dependencies": {
+    "cheerio": "^1.0.0-rc.12"
+  },
+  "scripts": {
+    "start": "python -m http.server 8080"
+  },
+  "keywords": ["ai", "cms", "journalism", "translation"],
+  "author": "AI CMS Demo",
+  "license": "MIT"
+} 
