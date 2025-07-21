@@ -11,35 +11,51 @@ module.exports = async (req, res) => {
 
   let prompt = '';
   if (direction === 'en-vi') {
-    prompt = `Dịch văn bản sau từ tiếng Anh sang tiếng Việt theo chuẩn báo chí Việt Nam chuyên nghiệp. Yêu cầu chi tiết:
+    prompt = `Dịch văn bản sau từ tiếng Anh sang tiếng Việt theo phong cách của VnEconomy - tờ báo tài chính hàng đầu Việt Nam. Yêu cầu chi tiết:
 
-PHONG CÁCH VÀ VĂN PHONG:
-- Sử dụng văn phong báo chí: khách quan, chính xác, súc tích, trang trọng
-- Tránh ngôn ngữ thông tục, lóng, hoặc quá văn học
-- Câu văn rõ ràng, logic, dễ hiểu cho đại chúng
-- Sử dụng câu chủ động thay vì câu bị động khi có thể
+VĂN PHONG VNECONOMY:
+- Phong cách chuyên nghiệp, nghiêm túc nhưng dễ tiếp cận
+- Câu văn súc tích, rõ ràng, trực tiếp đến vấn đề
+- Sử dụng thuật ngữ kinh tế chính xác như VnEconomy
+- Tránh văn phong khô khan, academic quá mức
+- Balance giữa chuyên môn và dễ hiểu cho business readers
 
-QUY CHUẨN BÁOE CHÍ VIỆT NAM:
-- Tuân thủ chính tả và ngữ pháp chuẩn tiếng Việt
-- Sử dụng thuật ngữ báo chí chính xác (ví dụ: "tuyên bố" thay vì "nói", "khẳng định" thay vì "bảo")
-- Danh xưng và chức danh chính xác (Tổng thống, Thủ tướng, Chủ tịch...)
-- Đơn vị tiền tệ, thời gian theo chuẩn Việt Nam
+THUẬT NGỮ KINH TẾ - TÀI CHÍNH (THEO VNECONOMY):
+- "Tăng trưởng kinh tế" (không phải "tăng trưởng economic")
+- "Ngân hàng Nhà nước" (thay vì "ngân hàng trung ương")
+- "Thị trường chứng khoán" (không phải "stock market")
+- "Doanh nghiệp" (thay vì "công ty" cho business context)
+- "Nhà đầu tư" (thay vì "investor")
+- "Lạm phát" (inflation), "lãi suất" (interest rate)
+- "GDP" giữ nguyên, "CPI" → "chỉ số giá tiêu dùng"
+- "Fed" → "Cục Dự trữ Liên bang Mỹ" (lần đầu), sau đó "Fed"
 
-THUẬT NGỮ CHUYÊN NGÀNH:
-- Kinh tế: GDP, lạm phát, lãi suất, chứng khoán...
-- Chính trị: quốc hội, chính phủ, ngoại giao, luật pháp...
-- Xã hội: giáo dục, y tế, môi trường, an sinh...
-- Công nghệ: AI, blockchain, internet, mạng xã hội...
+PHONG CÁCH TIÊU ĐỀ VÀ DẪN BÀI:
+- Sử dụng động từ mạnh: "tăng vốn", "mở rộng", "đạt được", "ghi nhận"
+- Tránh bị động: "Công ty ABC tăng lợi nhuận" thay vì "Lợi nhuận được tăng"
+- Numbers và % giữ nguyên format: "tăng 15%", "đạt 2,5 tỷ USD"
 
-CẤU TRÚC VÀ LOGIC:
-- Giữ nguyên ý nghĩa và tone gốc
-- Đảm bảo tính nhất quán trong thuật ngữ
-- Cấu trúc câu phù hợp với thói quen đọc của người Việt
-- Sử dụng dấu câu đúng chuẩn báo chí
+CẤU TRÚC VNECONOMY:
+- Lead paragraph ngắn gọn, súc tích
+- Facts trước, analysis sau
+- Quote trực tiếp từ nguồn tin
+- Kết luận practical, actionable
+
+QUY CHUẨN VIỆT NAM:
+- Chức danh: "Chủ tịch HĐQT", "Tổng giám đốc", "CEO"
+- Tiền tệ: "tỷ USD", "triệu USD", "tỷ đồng"
+- Thời gian: "quý I/2024", "6 tháng đầu năm"
+- Tên công ty: Giữ nguyên tên Anh + "(Tên tiếng Việt nếu có)"
+
+TONE VÀ STYLE:
+- Objective nhưng engaging
+- Professional nhưng accessible
+- Confident trong delivery thông tin
+- Avoid sensationalism, stick to facts
 
 Văn bản gốc: ${text}
 
-Chỉ trả về phần dịch, không giải thích thêm.`;
+Dịch theo đúng phong cách VnEconomy - chuyên nghiệp, súc tích, thuật ngữ chính xác. Chỉ trả về bản dịch.`;
   } else if (direction === 'vi-en') {
     prompt = `Translate the following Vietnamese text to English following international journalism standards. Detailed requirements:
 
