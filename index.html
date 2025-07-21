@@ -33,23 +33,45 @@
             word-wrap: break-word;
             overflow-wrap: break-word;
         }
+        .content-output {
+            line-height: 1.6;
+            font-size: 14px;
+            max-height: 500px;
+            overflow-y: auto;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+        }
+        .content-output h3, .content-output h4, .content-output h5 {
+            color: #0d6efd;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        .content-output p {
+            margin-bottom: 0.75rem;
+            text-align: justify;
+        }
+        .content-output strong {
+            color: #212529;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
     <div class="sidebar">
         <h4>Menu Tính Năng</h4>
         <div class="list-group">
-            <a class="list-group-item list-group-item-action" data-feature="ai-write">AI viết bài tự động</a>
-            <a class="list-group-item list-group-item-action" data-feature="spell-check">Kiểm tra lỗi chính tả</a>
-            <a class="list-group-item list-group-item-action" data-feature="hot-topics">Gợi ý chủ đề HOT</a>
-            <a class="list-group-item list-group-item-action" data-feature="tts">Text to Speech</a>
-            <a class="list-group-item list-group-item-action" data-feature="stt">Speech to Text</a>
-            <a class="list-group-item list-group-item-action" data-feature="translate-en-vi">Dịch Anh sang Việt</a>
-            <a class="list-group-item list-group-item-action" data-feature="translate-vi-en">Dịch Việt sang Anh</a>
-            <a class="list-group-item list-group-item-action" data-feature="translate-url">Dịch từ URL báo</a>
-            <a class="list-group-item list-group-item-action" data-feature="publish">Xuất bản đa nền tảng</a>
-            <a class="list-group-item list-group-item-action" data-feature="score-article">Chấm điểm bài báo</a>
-            <a class="list-group-item list-group-item-action" data-feature="image-manage">Quản lý ảnh bằng AI</a>
+            <a class="list-group-item list-group-item-action" data-feature="ai-write">📝 AI viết bài tự động</a>
+            <a class="list-group-item list-group-item-action" data-feature="spell-check">✅ Kiểm tra lỗi chính tả</a>
+            <a class="list-group-item list-group-item-action" data-feature="hot-topics">🔥 Gợi ý chủ đề HOT</a>
+            <a class="list-group-item list-group-item-action" data-feature="tts">🔊 Text to Speech</a>
+            <a class="list-group-item list-group-item-action" data-feature="stt">🎤 Speech to Text</a>
+            <a class="list-group-item list-group-item-action" data-feature="translate-en-vi">✅ Dịch Anh sang Việt</a>
+            <a class="list-group-item list-group-item-action" data-feature="translate-vi-en">✅ Dịch Việt sang Anh</a>
+            <a class="list-group-item list-group-item-action" data-feature="translate-url">✅ Dịch từ URL báo</a>
+            <a class="list-group-item list-group-item-action" data-feature="publish">🚀 Xuất bản đa nền tảng</a>
+            <a class="list-group-item list-group-item-action" data-feature="score-article">📊 Chấm điểm bài báo</a>
+            <a class="list-group-item list-group-item-action" data-feature="image-manage">🖼️ Quản lý ảnh bằng AI</a>
         </div>
     </div>
     <div class="main-content" id="feature-content">
@@ -682,11 +704,405 @@
                             btn.disabled = false;
                         }
                     });
+                } else if (feature === 'ai-write') {
+                    content.innerHTML = `
+                        <h2>📝 AI Viết Bài Tự Động</h2>
+                        <div class="card">
+                            <div class="card-body">
+                                <!-- Input Method Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">🎯 Nguồn nội dung:</label>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="inputMethod" id="fromTopic" value="topic" checked>
+                                                <label class="form-check-label" for="fromTopic">
+                                                    💡 Từ chủ đề
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="inputMethod" id="fromArticles" value="articles">
+                                                <label class="form-check-label" for="fromArticles">
+                                                    📰 Từ bài báo có sẵn
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="inputMethod" id="fromWord" value="word">
+                                                <label class="form-check-label" for="fromWord">
+                                                    📄 Từ file Word
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Topic Input -->
+                                <div id="topicInput" class="input-section">
+                                    <div class="mb-3">
+                                        <label for="topicText" class="form-label">💡 Chủ đề bài viết:</label>
+                                        <textarea class="form-control" id="topicText" rows="3" placeholder="VD: Tác động của AI đối với ngành báo chí Việt Nam, xu hướng phát triển công nghệ blockchain..."></textarea>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="topicContext" class="form-label">📝 Bối cảnh/Góc độ (tùy chọn):</label>
+                                        <textarea class="form-control" id="topicContext" rows="2" placeholder="Thêm bối cảnh, góc độ tiếp cận, hoặc thông tin cần lưu ý..."></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Articles Input -->
+                                <div id="articlesInput" class="input-section" style="display: none;">
+                                    <div class="mb-3">
+                                        <label class="form-label">📰 Bài báo nguồn (có thể paste nhiều bài):</label>
+                                        <div id="articlesContainer">
+                                            <div class="article-input mb-3">
+                                                <div class="input-group">
+                                                    <span class="input-group-text">📰 Bài 1</span>
+                                                    <textarea class="form-control article-content" rows="4" placeholder="Paste nội dung bài báo thứ 1..."></textarea>
+                                                    <button class="btn btn-outline-danger remove-article" type="button">🗑️</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <button id="addArticleBtn" class="btn btn-outline-primary btn-sm">➕ Thêm bài báo</button>
+                                    </div>
+                                </div>
+
+                                <!-- Word File Input -->
+                                <div id="wordInput" class="input-section" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="wordFile" class="form-label">📄 Upload file Word:</label>
+                                        <input class="form-control" type="file" id="wordFile" accept=".doc,.docx,.txt">
+                                        <div class="form-text">Hỗ trợ: .doc, .docx, .txt (tối đa 10MB)</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="wordPreview" class="form-label">📋 Nội dung file (preview):</label>
+                                        <textarea class="form-control" id="wordPreview" rows="5" placeholder="Nội dung file sẽ hiển thị ở đây..." readonly></textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Article Configuration -->
+                                <div class="row mb-4">
+                                    <div class="col-md-6">
+                                        <label for="articleType" class="form-label">📊 Dạng bài báo:</label>
+                                        <select id="articleType" class="form-select">
+                                            <option value="tin-van">📋 Tin vắn (200-400 từ)</option>
+                                            <option value="tin-tong-hop">📰 Tin tổng hợp (400-800 từ)</option>
+                                            <option value="phong-su-ngan">📝 Phóng sự ngắn (600-1000 từ)</option>
+                                            <option value="bai-phan-tich">🔍 Bài phân tích (800-1200 từ)</option>
+                                            <option value="phong-su-dai">📖 Phóng sự dài (1000-2000 từ)</option>
+                                            <option value="bai-binh-luan">💬 Bài bình luận (600-1000 từ)</option>
+                                            <option value="bao-cao-chuyen-sau">📊 Báo cáo chuyên sâu (1200+ từ)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label for="outputType" class="form-label">🎯 Loại output:</label>
+                                        <select id="outputType" class="form-select">
+                                            <option value="outline">📋 Sườn bài báo (để editor hoàn thiện)</option>
+                                            <option value="complete">✅ Bài báo hoàn chỉnh</option>
+                                            <option value="both">📝 Cả hai (Sườn + Bài hoàn chỉnh)</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Writing Style Options -->
+                                <div class="mb-4">
+                                    <label class="form-label">🎨 Phong cách viết:</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <select id="writingTone" class="form-select">
+                                                <option value="objective">🎯 Khách quan, trung tính</option>
+                                                <option value="engaging">✨ Hấp dẫn, thu hút</option>
+                                                <option value="formal">🏛️ Trang trọng, chính thức</option>
+                                                <option value="casual">😊 Gần gũi, dễ hiểu</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <select id="targetAudience" class="form-select">
+                                                <option value="general">👥 Độc giả đại chúng</option>
+                                                <option value="business">💼 Cộng đồng doanh nghiệp</option>
+                                                <option value="tech">💻 Cộng đồng công nghệ</option>
+                                                <option value="youth">🎓 Giới trẻ, sinh viên</option>
+                                                <option value="professional">🏢 Chuyên gia, chuyên ngành</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generate Button -->
+                                <div class="text-center">
+                                    <button id="generateArticleBtn" class="btn btn-primary btn-lg">
+                                        🚀 Tạo Bài Báo AI
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Section -->
+                        <div class="mt-4" id="aiWriteResults" style="display: none;">
+                            <!-- Outline Section -->
+                            <div id="outlineSection" class="card mb-4" style="display: none;">
+                                <div class="card-header bg-info text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">📋 Sườn Bài Báo</h5>
+                                        <button class="btn btn-light btn-sm" onclick="copyContent('outlineContent')">📋 Copy Sườn</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="outlineContent" class="content-output"></div>
+                                </div>
+                            </div>
+
+                            <!-- Complete Article Section -->
+                            <div id="articleSection" class="card mb-4" style="display: none;">
+                                <div class="card-header bg-success text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0">✅ Bài Báo Hoàn Chỉnh</h5>
+                                        <div>
+                                            <button class="btn btn-light btn-sm me-2" onclick="copyContent('articleContent')">📋 Copy Bài</button>
+                                            <button class="btn btn-warning btn-sm" onclick="refineArticle()">✨ Tinh Chỉnh</button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="articleContent" class="content-output"></div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // AI Writing Logic
+                    setupAIWritingFeature();
                 } else {
                     content.innerHTML = `<h2>${this.textContent}</h2><p>Đang phát triển tính năng: ${feature}. Nội dung sẽ được thêm sau.</p>`;
                 }
             });
         });
+
+        // AI Writing Feature Setup
+        function setupAIWritingFeature() {
+            // Input method switching
+            document.querySelectorAll('input[name="inputMethod"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    document.querySelectorAll('.input-section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
+                    if (this.value === 'topic') {
+                        document.getElementById('topicInput').style.display = 'block';
+                    } else if (this.value === 'articles') {
+                        document.getElementById('articlesInput').style.display = 'block';
+                    } else if (this.value === 'word') {
+                        document.getElementById('wordInput').style.display = 'block';
+                    }
+                });
+            });
+
+            // Add article functionality
+            let articleCount = 1;
+            document.getElementById('addArticleBtn').addEventListener('click', function() {
+                articleCount++;
+                const container = document.getElementById('articlesContainer');
+                const newArticle = document.createElement('div');
+                newArticle.className = 'article-input mb-3';
+                newArticle.innerHTML = `
+                    <div class="input-group">
+                        <span class="input-group-text">📰 Bài ${articleCount}</span>
+                        <textarea class="form-control article-content" rows="4" placeholder="Paste nội dung bài báo thứ ${articleCount}..."></textarea>
+                        <button class="btn btn-outline-danger remove-article" type="button">🗑️</button>
+                    </div>
+                `;
+                container.appendChild(newArticle);
+            });
+
+            // Remove article functionality
+            document.addEventListener('click', function(e) {
+                if (e.target.classList.contains('remove-article')) {
+                    if (document.querySelectorAll('.article-input').length > 1) {
+                        e.target.closest('.article-input').remove();
+                        // Renumber articles
+                        document.querySelectorAll('.article-input').forEach((article, index) => {
+                            article.querySelector('.input-group-text').textContent = `📰 Bài ${index + 1}`;
+                            article.querySelector('textarea').placeholder = `Paste nội dung bài báo thứ ${index + 1}...`;
+                        });
+                        articleCount = document.querySelectorAll('.article-input').length;
+                    } else {
+                        alert('Cần ít nhất 1 bài báo nguồn!');
+                    }
+                }
+            });
+
+            // Word file upload handling
+            document.getElementById('wordFile').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('wordPreview').value = e.target.result;
+                    };
+                    reader.readAsText(file);
+                }
+            });
+
+            // Generate article button
+            document.getElementById('generateArticleBtn').addEventListener('click', async function() {
+                const btn = this;
+                const originalText = btn.innerHTML;
+                
+                try {
+                    // Collect input data
+                    const inputMethod = document.querySelector('input[name="inputMethod"]:checked').value;
+                    const articleType = document.getElementById('articleType').value;
+                    const outputType = document.getElementById('outputType').value;
+                    const writingTone = document.getElementById('writingTone').value;
+                    const targetAudience = document.getElementById('targetAudience').value;
+
+                    let inputContent = '';
+                    let inputContext = '';
+
+                    if (inputMethod === 'topic') {
+                        inputContent = document.getElementById('topicText').value.trim();
+                        inputContext = document.getElementById('topicContext').value.trim();
+                        if (!inputContent) {
+                            alert('Vui lòng nhập chủ đề bài viết!');
+                            return;
+                        }
+                    } else if (inputMethod === 'articles') {
+                        const articles = Array.from(document.querySelectorAll('.article-content'))
+                            .map(textarea => textarea.value.trim())
+                            .filter(content => content);
+                        if (articles.length === 0) {
+                            alert('Vui lòng nhập ít nhất 1 bài báo nguồn!');
+                            return;
+                        }
+                                                 inputContent = articles.join('\n\n=== PHÂN CÁCH BÀI ===\n\n');
+                    } else if (inputMethod === 'word') {
+                        inputContent = document.getElementById('wordPreview').value.trim();
+                        if (!inputContent) {
+                            alert('Vui lòng upload file Word hoặc nhập nội dung!');
+                            return;
+                        }
+                    }
+
+                    // Update button state
+                    btn.disabled = true;
+                    btn.innerHTML = '⏳ Đang tạo bài...';
+
+                    // Call API
+                    const response = await fetch('/api/ai-write', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            inputMethod,
+                            inputContent,
+                            inputContext,
+                            articleType,
+                            outputType,
+                            writingTone,
+                            targetAudience
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Lỗi API: ' + response.statusText);
+                    }
+
+                    const result = await response.json();
+                    
+                    // Display results
+                    displayAIWritingResults(result, outputType);
+
+                } catch (error) {
+                    console.error('AI Writing Error:', error);
+                    alert('Lỗi khi tạo bài: ' + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            });
+        }
+
+        function displayAIWritingResults(result, outputType) {
+            const resultsSection = document.getElementById('aiWriteResults');
+            const outlineSection = document.getElementById('outlineSection');
+            const articleSection = document.getElementById('articleSection');
+
+            resultsSection.style.display = 'block';
+
+            if (outputType === 'outline' || outputType === 'both') {
+                document.getElementById('outlineContent').innerHTML = formatContent(result.outline || result.content);
+                outlineSection.style.display = 'block';
+            } else {
+                outlineSection.style.display = 'none';
+            }
+
+            if (outputType === 'complete' || outputType === 'both') {
+                document.getElementById('articleContent').innerHTML = formatContent(result.article || result.content);
+                articleSection.style.display = 'block';
+            } else {
+                articleSection.style.display = 'none';
+            }
+
+            // Scroll to results
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+                 function formatContent(content) {
+             if (!content) return '<em>Không có nội dung</em>';
+             
+             return content
+                 .split('\n')
+                 .map(line => {
+                     line = line.trim();
+                     if (!line) return '';
+                     
+                     // Format headers
+                     if (line.startsWith('#')) {
+                         const level = line.match(/^#+/)[0].length;
+                         const text = line.replace(/^#+\s*/, '');
+                         return `<h${level + 2} class="text-primary mt-3 mb-2">${text}</h${level + 2}>`;
+                     }
+                     
+                     // Format bold text
+                     line = line.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                     
+                     // Format italic text  
+                     line = line.replace(/\*(.*?)\*/g, '<em>$1</em>');
+                     
+                     // Regular paragraph
+                     return `<p class="mb-2">${line}</p>`;
+                 })
+                 .filter(line => line) // Remove empty lines
+                 .join('');
+         }
+
+        // Copy content function
+        window.copyContent = function(elementId) {
+            const element = document.getElementById(elementId);
+            const text = element.innerText || element.textContent;
+            
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = event.target;
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '✅ Đã copy!';
+                btn.classList.add('btn-success');
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-light');
+                }, 2000);
+            }).catch(err => {
+                console.error('Copy failed:', err);
+                alert('Không thể copy. Vui lòng copy thủ công.');
+            });
+        };
+
+        // Refine article function
+        window.refineArticle = function() {
+            // TODO: Implement article refinement functionality
+            alert('Tính năng tinh chỉnh đang được phát triển!');
+        };
     </script>
 </body>
 </html> 
