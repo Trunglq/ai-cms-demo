@@ -23,16 +23,50 @@ export default async function handler(req, res) {
     let title = '';
     let content = '';
 
+    // Try Readability first, then Puppeteer for VnExpress if needed
     try {
       const readabilityData = await readabilityExtraction(url, hostname);
       title = readabilityData.title;
       content = readabilityData.content;
       console.log(`Readability result: title=${title?.length || 0} chars, content=${content?.length || 0} chars`);
+      
+      // If VnExpress and content is too short, try Puppeteer
+      if (hostname.includes('vnexpress') && content && content.length < 500) {
+        console.log('VnExpress content too short, trying Puppeteer fallback...');
+        try {
+          const puppeteerData = await advancedCrawler(url, hostname);
+          if (puppeteerData.content && puppeteerData.content.length > content.length) {
+            title = puppeteerData.title || title;
+            content = puppeteerData.content;
+            console.log(`Puppeteer enhanced result: title=${title?.length || 0} chars, content=${content?.length || 0} chars`);
+          }
+        } catch (puppeteerError) {
+          console.log('Puppeteer fallback failed:', puppeteerError.message);
+        }
+      }
     } catch (readabilityError) {
-      console.log('Readability extraction failed, falling back to basic extraction:', readabilityError.message);
-      const basicData = await basicExtraction(url, hostname);
-      title = basicData.title;
-      content = basicData.content;
+      console.log('Readability extraction failed, trying advanced crawler...', readabilityError.message);
+      
+      // Try Puppeteer for Vietnamese sites that might need it
+      if (hostname.includes('vnexpress') || hostname.includes('vietnamnet') || hostname.includes('dantri')) {
+        try {
+          console.log('Using advanced crawler for Vietnamese site...');
+          const crawlerData = await advancedCrawler(url, hostname);
+          title = crawlerData.title;
+          content = crawlerData.content;
+          console.log(`Advanced crawler result: title=${title?.length || 0} chars, content=${content?.length || 0} chars`);
+        } catch (crawlerError) {
+          console.log('Advanced crawler also failed, falling back to basic extraction:', crawlerError.message);
+          const basicData = await basicExtraction(url, hostname);
+          title = basicData.title;
+          content = basicData.content;
+        }
+      } else {
+        // For non-Vietnamese sites, use basic extraction
+        const basicData = await basicExtraction(url, hostname);
+        title = basicData.title;
+        content = basicData.content;
+      }
     }
 
     if (!title && !content) {
@@ -60,10 +94,12 @@ export default async function handler(req, res) {
       },
       debug: {
         hostname: hostname,
-        extractionMethod: content ? (content.length > 500 ? 'readability' : 'fallback') : 'failed',
+        extractionMethod: content ? 
+          (content.length > 1000 ? 'readability' : 
+           content.length > 500 ? 'puppeteer' : 'basic') : 'failed',
         titleLength: title?.length || 0,
         contentLength: content?.length || 0,
-        readabilityUsed: content && content.length > 500
+        isVnExpressEnhanced: hostname.includes('vnexpress') && content && content.length > 500
       }
     });
 
@@ -235,8 +271,21 @@ async function advancedCrawler(url, hostname) {
         timeout: 45000  // Increase timeout for slow sites
       });
 
-      // Wait for content to load
-      await page.waitForTimeout(5000); // Increase wait time
+      // Extra wait time for VnExpress dynamic content
+      if (hostname.includes('vnexpress')) {
+        console.log('VnExpress detected, waiting for dynamic content...');
+        await page.waitForTimeout(8000); // Longer wait for VnExpress
+        
+        // Try to wait for specific VnExpress content indicators
+        try {
+          await page.waitForSelector('.fck_detail, .content_detail, .Normal', { timeout: 5000 });
+          console.log('VnExpress content selectors found');
+        } catch (selectorError) {
+          console.log('VnExpress content selectors not found, continuing...');
+        }
+      } else {
+        await page.waitForTimeout(5000); // Standard wait time
+      }
     } catch (error) {
       console.log(`Navigation timeout for ${url}, trying fallback...`);
       // Try a second time with different settings
@@ -244,7 +293,12 @@ async function advancedCrawler(url, hostname) {
         waitUntil: 'networkidle0',
         timeout: 30000 
       });
-      await page.waitForTimeout(2000);
+      
+      if (hostname.includes('vnexpress')) {
+        await page.waitForTimeout(5000); // Extra wait for VnExpress fallback
+      } else {
+        await page.waitForTimeout(2000);
+      }
     }
 
     console.log('Extracting content with site-specific selectors...');
@@ -255,23 +309,26 @@ async function advancedCrawler(url, hostname) {
 
       // Site-specific extraction logic
       if (hostname.includes('vnexpress')) {
-        // VnExpress selectors - Updated for better extraction
+        // VnExpress selectors - Enhanced 2024 structure
         const titleSelectors = [
           'h1.title-detail',
-          '.title-detail h1',
+          '.title-detail h1', 
           'h1.title_news_detail',
-          '.container h1',
+          '.container .title-detail',
+          '.article_title h1',
           'h1'
         ];
         
         const contentSelectors = [
           '.fck_detail p',
-          '.sidebar_1 .fck_detail p',
+          '.sidebar_1 .fck_detail p', 
           '.Normal p',
           'article .fck_detail p',
           '.content_detail .Normal p',
           '.content_detail p',
-          'article p'
+          '.article_sidebar .fck_detail p',
+          'article p',
+          '.content-detail p'
         ];
 
         // Extract title
@@ -283,23 +340,59 @@ async function advancedCrawler(url, hostname) {
           }
         }
 
-        // Extract content - Updated for VnExpress
+        // Extract content - Enhanced for VnExpress 2024
+        let foundContent = false;
         for (const selector of contentSelectors) {
           const paragraphs = Array.from(document.querySelectorAll(selector))
-            .map(p => p.textContent.trim())
+            .map(p => {
+              // Get text content and clean it
+              let text = p.textContent.trim();
+              // Also try innerHTML to handle formatted content
+              if (!text && p.innerHTML) {
+                text = p.innerHTML.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+              }
+              return text;
+            })
             .filter(text => {
-              if (text.length < 30) return false;
+              if (!text || text.length < 25) return false;
               if (text.includes('©') || text.includes('Copyright')) return false;
-              if (text.includes('Tags:') || text.includes('Từ khóa:')) return false;
-              if (text.includes('Chia sẻ:') || text.includes('Share:')) return false;
-              if (text.includes('VnExpress')) return false;
-              if (text.match(/^\d+\/\d+\/\d+/)) return false;
+              if (text.includes('Tags:') || text.includes('Từ khóa:') || text.includes('Tag:')) return false;
+              if (text.includes('Chia sẻ') || text.includes('Share') || text.includes('Facebook')) return false;
+              if (text.includes('VnExpress') && text.length < 100) return false; // Allow longer texts mentioning VnExpress
+              if (text.match(/^\d+\/\d+\/\d+/) || text.match(/^\d+:\d+/)) return false;
+              if (text.includes('Bình luận') || text.includes('Comment')) return false;
+              if (text.includes('Xem thêm') || text.includes('Đọc thêm')) return false;
               return true;
             });
           
+          console.log(`VnExpress selector "${selector}" found ${paragraphs.length} paragraphs`);
+          
           if (paragraphs.length >= 2) {
-            content = paragraphs.join('\n\n');
+            content = paragraphs.slice(0, 20).join('\n\n'); // Take more paragraphs for VnExpress
+            foundContent = true;
+            console.log(`VnExpress content extracted using selector: ${selector}`);
             break;
+          }
+        }
+        
+        // VnExpress specific fallback - try to find article body
+        if (!foundContent) {
+          console.log('Trying VnExpress specific fallback...');
+          const articleBody = document.querySelector('.fck_detail') || 
+                             document.querySelector('.content_detail') ||
+                             document.querySelector('.Normal');
+          
+          if (articleBody) {
+            const allParas = Array.from(articleBody.querySelectorAll('*'))
+              .filter(el => el.tagName === 'P' || el.tagName === 'DIV')
+              .map(p => p.textContent.trim())
+              .filter(text => text.length > 30 && !text.includes('©') && !text.includes('VnExpress'))
+              .slice(0, 15);
+            
+            if (allParas.length >= 2) {
+              content = allParas.join('\n\n');
+              console.log('VnExpress fallback found content');
+            }
           }
         }
       } 
