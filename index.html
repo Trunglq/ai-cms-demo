@@ -31,7 +31,7 @@
             margin-bottom: 2px;
             transition: all 0.2s ease;
             color: #495057;
-            font-weight: 500;
+            font-weight: 400;
         }
         .list-group-item:hover {
             background-color: #e9ecef;
@@ -812,11 +812,11 @@
                                 <!-- Topic Input -->
                                 <div id="topicInput" class="input-section">
                                     <div class="mb-3">
-                                        <label for="topicText" class="form-label">💡 Chủ đề bài viết:</label>
+                                        <label for="topicText" class="form-label"><i class="fas fa-lightbulb me-2"></i>Chủ đề bài viết:</label>
                                         <textarea class="form-control" id="topicText" rows="3" placeholder="VD: Tác động của AI đối với ngành báo chí Việt Nam, xu hướng phát triển công nghệ blockchain..."></textarea>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="topicContext" class="form-label">📝 Bối cảnh/Góc độ (tùy chọn):</label>
+                                        <label for="topicContext" class="form-label"><i class="fas fa-edit me-2"></i>Bối cảnh/Góc độ (tùy chọn):</label>
                                         <textarea class="form-control" id="topicContext" rows="2" placeholder="Thêm bối cảnh, góc độ tiếp cận, hoặc thông tin cần lưu ý..."></textarea>
                                     </div>
                                 </div>
@@ -825,37 +825,37 @@
                                 <div id="hotTopicsInput" class="input-section" style="display: none;">
                                     <div class="mb-3">
                                         <div class="d-flex justify-content-between align-items-center mb-2">
-                                            <label class="form-label">🔥 Top 10 Chủ Đề Hot Hiện Tại:</label>
-                                            <button id="refreshHotTopicsBtn" class="btn btn-outline-primary btn-sm">🔄 Refresh Topics</button>
+                                            <label class="form-label"><i class="fas fa-fire me-2"></i>Top 10 Chủ Đề Hot Hiện Tại:</label>
+                                            <button id="refreshHotTopicsBtn" class="btn btn-outline-primary btn-sm"><i class="fas fa-sync-alt me-1"></i>Refresh Topics</button>
                                         </div>
                                         <div class="row align-items-center mb-3">
                                             <div class="col-md-4">
-                                                <label for="categoryFilter" class="form-label small">📂 Chuyên mục:</label>
+                                                <label for="categoryFilter" class="form-label small"><i class="fas fa-folder me-1"></i>Chuyên mục:</label>
                                                 <select id="categoryFilter" class="form-select form-select-sm">
-                                                    <option value="all">🌟 Tất cả chuyên mục</option>
-                                                    <option value="Kinh tế">💼 Kinh tế</option>
-                                                    <option value="Công nghệ">💻 Công nghệ</option>
-                                                    <option value="Xã hội">👥 Xã hội</option>
-                                                    <option value="Văn hóa">🎭 Văn hóa</option>
+                                                    <option value="all">Tất cả chuyên mục</option>
+                                                    <option value="Kinh tế">Kinh tế</option>
+                                                    <option value="Công nghệ">Công nghệ</option>
+                                                    <option value="Xã hội">Xã hội</option>
+                                                    <option value="Văn hóa">Văn hóa</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small">📊 Trend Score:</label>
+                                                <label class="form-label small"><i class="fas fa-chart-line me-1"></i>Trend Score:</label>
                                                 <select id="scoreFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả mức độ</option>
-                                                    <option value="90">🔥 Siêu Hot (90%+)</option>
-                                                    <option value="80">⭐ Hot (80%+)</option>
-                                                    <option value="70">📈 Trending (70%+)</option>
+                                                    <option value="90">Siêu Hot (90%+)</option>
+                                                    <option value="80">Hot (80%+)</option>
+                                                    <option value="70">Trending (70%+)</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
-                                                <label class="form-label small">📡 Nguồn:</label>
+                                                <label class="form-label small"><i class="fas fa-rss me-1"></i>Nguồn:</label>
                                                 <select id="sourceFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả nguồn</option>
-                                                    <option value="Current Events">🔥 Current Events</option>
-                                                    <option value="Tech Trends">💻 Tech Trends</option>
-                                                    <option value="Vietnamese">🇻🇳 Vietnamese Topics</option>
-                                                    <option value="Fallback">📋 General Topics</option>
+                                                    <option value="Current Events">Current Events</option>
+                                                    <option value="Tech Trends">Tech Trends</option>
+                                                    <option value="Vietnamese">Vietnamese Topics</option>
+                                                    <option value="Fallback">General Topics</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -869,14 +869,14 @@
                                             <!-- Hot topics will be populated here -->
                                         </div>
                                         <div class="mt-3">
-                                            <label for="selectedTopicDetails" class="form-label">📝 Chi tiết chủ đề đã chọn:</label>
+                                            <label for="selectedTopicDetails" class="form-label"><i class="fas fa-edit me-2"></i>Chi tiết chủ đề đã chọn:</label>
                                             <div id="selectedTopicDisplay" class="alert alert-info" style="display: none;">
                                                 <strong id="selectedTopicTitle">Chưa chọn chủ đề</strong>
                                                 <p id="selectedTopicDescription" class="mb-1"></p>
                                                 <small class="text-muted">Trend score: <span id="selectedTopicScore">-</span> | Source: <span id="selectedTopicSource">-</span></small>
                                             </div>
                                             <textarea class="form-control" id="selectedTopicDetails" rows="3" placeholder="Góc độ và bối cảnh bổ sung cho chủ đề Hot (tùy chọn)..." readonly></textarea>
-                                            <div class="form-text">💡 Chọn một chủ đề Hot ở trên, sau đó có thể thêm góc độ riêng</div>
+                                            <div class="form-text"><i class="fas fa-info-circle me-1"></i>Chọn một chủ đề Hot ở trên, sau đó có thể thêm góc độ riêng</div>
                                         </div>
                                     </div>
                                 </div>
@@ -884,29 +884,29 @@
                                 <!-- Articles Input -->
                                 <div id="articlesInput" class="input-section" style="display: none;">
                                     <div class="mb-3">
-                                        <label class="form-label">📰 Bài báo nguồn (có thể paste nhiều bài):</label>
+                                        <label class="form-label"><i class="fas fa-newspaper me-2"></i>Bài báo nguồn (có thể paste nhiều bài):</label>
                                         <div id="articlesContainer">
                                             <div class="article-input mb-3">
                                                 <div class="input-group">
-                                                    <span class="input-group-text">📰 Bài 1</span>
+                                                    <span class="input-group-text"><i class="fas fa-newspaper me-1"></i>Bài 1</span>
                                                     <textarea class="form-control article-content" rows="4" placeholder="Paste nội dung bài báo thứ 1..."></textarea>
-                                                    <button class="btn btn-outline-danger remove-article" type="button">🗑️</button>
+                                                    <button class="btn btn-outline-danger remove-article" type="button"><i class="fas fa-trash"></i></button>
                                                 </div>
                                             </div>
                                         </div>
-                                        <button id="addArticleBtn" class="btn btn-outline-primary btn-sm">➕ Thêm bài báo</button>
+                                        <button id="addArticleBtn" class="btn btn-outline-primary btn-sm"><i class="fas fa-plus me-1"></i>Thêm bài báo</button>
                                     </div>
                                 </div>
 
                                 <!-- Word File Input -->
                                 <div id="wordInput" class="input-section" style="display: none;">
                                     <div class="mb-3">
-                                        <label for="wordFile" class="form-label">📄 Upload file Word:</label>
+                                        <label for="wordFile" class="form-label"><i class="fas fa-file-word me-2"></i>Upload file Word:</label>
                                         <input class="form-control" type="file" id="wordFile" accept=".doc,.docx,.txt">
                                         <div class="form-text">Hỗ trợ: .doc, .docx, .txt (tối đa 10MB)</div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="wordPreview" class="form-label">📋 Nội dung file (preview):</label>
+                                        <label for="wordPreview" class="form-label"><i class="fas fa-eye me-2"></i>Nội dung file (preview):</label>
                                         <textarea class="form-control" id="wordPreview" rows="5" placeholder="Nội dung file sẽ hiển thị ở đây..." readonly></textarea>
                                     </div>
                                 </div>
@@ -914,46 +914,46 @@
                                 <!-- Article Configuration -->
                                 <div class="row mb-4">
                                     <div class="col-md-6">
-                                        <label for="articleType" class="form-label">📊 Dạng bài báo:</label>
+                                        <label for="articleType" class="form-label"><i class="fas fa-file-alt me-2"></i>Dạng bài báo:</label>
                                         <select id="articleType" class="form-select">
-                                            <option value="tin-van">📋 Tin vắn (200-400 từ)</option>
-                                            <option value="tin-tong-hop">📰 Tin tổng hợp (400-800 từ)</option>
-                                            <option value="phong-su-ngan">📝 Phóng sự ngắn (600-1000 từ)</option>
-                                            <option value="bai-phan-tich">🔍 Bài phân tích (800-1200 từ)</option>
-                                            <option value="phong-su-dai">📖 Phóng sự dài (1000-2000 từ)</option>
-                                            <option value="bai-binh-luan">💬 Bài bình luận (600-1000 từ)</option>
-                                            <option value="bao-cao-chuyen-sau">📊 Báo cáo chuyên sâu (1200+ từ)</option>
+                                            <option value="tin-van">Tin vắn (200-400 từ)</option>
+                                            <option value="tin-tong-hop">Tin tổng hợp (400-800 từ)</option>
+                                            <option value="phong-su-ngan">Phóng sự ngắn (600-1000 từ)</option>
+                                            <option value="bai-phan-tich">Bài phân tích (800-1200 từ)</option>
+                                            <option value="phong-su-dai">Phóng sự dài (1000-2000 từ)</option>
+                                            <option value="bai-binh-luan">Bài bình luận (600-1000 từ)</option>
+                                            <option value="bao-cao-chuyen-sau">Báo cáo chuyên sâu (1200+ từ)</option>
                                         </select>
                                     </div>
                                     <div class="col-md-6">
-                                        <label for="outputType" class="form-label">🎯 Loại output:</label>
+                                        <label for="outputType" class="form-label"><i class="fas fa-cog me-2"></i>Loại output:</label>
                                         <select id="outputType" class="form-select">
-                                            <option value="outline">📋 Sườn bài báo (để editor hoàn thiện)</option>
-                                            <option value="complete">✅ Bài báo hoàn chỉnh</option>
-                                            <option value="both">📝 Cả hai (Sườn + Bài hoàn chỉnh)</option>
+                                            <option value="outline">Sườn bài báo (để editor hoàn thiện)</option>
+                                            <option value="complete">Bài báo hoàn chỉnh</option>
+                                            <option value="both">Cả hai (Sườn + Bài hoàn chỉnh)</option>
                                         </select>
                                     </div>
                                 </div>
 
                                 <!-- Writing Style Options -->
                                 <div class="mb-4">
-                                    <label class="form-label">🎨 Phong cách viết:</label>
+                                    <label class="form-label"><i class="fas fa-palette me-2"></i>Phong cách viết:</label>
                                     <div class="row">
                                         <div class="col-md-6">
                                             <select id="writingTone" class="form-select">
-                                                <option value="objective">🎯 Khách quan, trung tính</option>
-                                                <option value="engaging">✨ Hấp dẫn, thu hút</option>
-                                                <option value="formal">🏛️ Trang trọng, chính thức</option>
-                                                <option value="casual">😊 Gần gũi, dễ hiểu</option>
+                                                <option value="objective">Khách quan, trung tính</option>
+                                                <option value="engaging">Hấp dẫn, thu hút</option>
+                                                <option value="formal">Trang trọng, chính thức</option>
+                                                <option value="casual">Gần gũi, dễ hiểu</option>
                                             </select>
                                         </div>
                                         <div class="col-md-6">
                                             <select id="targetAudience" class="form-select">
-                                                <option value="general">👥 Độc giả đại chúng</option>
-                                                <option value="business">💼 Cộng đồng doanh nghiệp</option>
-                                                <option value="tech">💻 Cộng đồng công nghệ</option>
-                                                <option value="youth">🎓 Giới trẻ, sinh viên</option>
-                                                <option value="professional">🏢 Chuyên gia, chuyên ngành</option>
+                                                <option value="general">Độc giả đại chúng</option>
+                                                <option value="business">Cộng đồng doanh nghiệp</option>
+                                                <option value="tech">Cộng đồng công nghệ</option>
+                                                <option value="youth">Giới trẻ, sinh viên</option>
+                                                <option value="professional">Chuyên gia, chuyên ngành</option>
                                             </select>
                                         </div>
                                     </div>
@@ -962,7 +962,7 @@
                                 <!-- Generate Button -->
                                 <div class="text-center">
                                     <button id="generateArticleBtn" class="btn btn-primary btn-lg">
-                                        🚀 Tạo Bài Báo AI
+                                        <i class="fas fa-magic me-2"></i>Tạo Bài Báo AI
                                     </button>
                                 </div>
                             </div>
@@ -974,8 +974,8 @@
                             <div id="outlineSection" class="card mb-4" style="display: none;">
                                 <div class="card-header bg-info text-white">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0">📋 Sườn Bài Báo</h5>
-                                        <button class="btn btn-light btn-sm" onclick="copyContent('outlineContent')">📋 Copy Sườn</button>
+                                        <h5 class="mb-0"><i class="fas fa-list me-2"></i>Sườn Bài Báo</h5>
+                                        <button class="btn btn-light btn-sm" onclick="copyContent('outlineContent')"><i class="fas fa-copy me-1"></i>Copy Sườn</button>
                                     </div>
                                 </div>
                                 <div class="card-body">
@@ -987,10 +987,10 @@
                             <div id="articleSection" class="card mb-4" style="display: none;">
                                 <div class="card-header bg-success text-white">
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <h5 class="mb-0">✅ Bài Báo Hoàn Chỉnh</h5>
+                                        <h5 class="mb-0"><i class="fas fa-check-circle me-2"></i>Bài Báo Hoàn Chỉnh</h5>
                                         <div>
-                                            <button class="btn btn-light btn-sm me-2" onclick="copyContent('articleContent')">📋 Copy Bài</button>
-                                            <button class="btn btn-warning btn-sm" onclick="refineArticle()">✨ Tinh Chỉnh</button>
+                                            <button class="btn btn-light btn-sm me-2" onclick="copyContent('articleContent')"><i class="fas fa-copy me-1"></i>Copy Bài</button>
+                                            <button class="btn btn-warning btn-sm" onclick="refineArticle()"><i class="fas fa-edit me-1"></i>Tinh Chỉnh</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1040,9 +1040,9 @@
                 newArticle.className = 'article-input mb-3';
                 newArticle.innerHTML = `
                     <div class="input-group">
-                        <span class="input-group-text">📰 Bài ${articleCount}</span>
+                        <span class="input-group-text"><i class="fas fa-newspaper me-1"></i>Bài ${articleCount}</span>
                         <textarea class="form-control article-content" rows="4" placeholder="Paste nội dung bài báo thứ ${articleCount}..."></textarea>
-                        <button class="btn btn-outline-danger remove-article" type="button">🗑️</button>
+                        <button class="btn btn-outline-danger remove-article" type="button"><i class="fas fa-trash"></i></button>
                     </div>
                 `;
                 container.appendChild(newArticle);
@@ -1055,7 +1055,7 @@
                         e.target.closest('.article-input').remove();
                         // Renumber articles
                         document.querySelectorAll('.article-input').forEach((article, index) => {
-                            article.querySelector('.input-group-text').textContent = `📰 Bài ${index + 1}`;
+                            article.querySelector('.input-group-text').innerHTML = `<i class="fas fa-newspaper me-1"></i>Bài ${index + 1}`;
                             article.querySelector('textarea').placeholder = `Paste nội dung bài báo thứ ${index + 1}...`;
                         });
                         articleCount = document.querySelectorAll('.article-input').length;
@@ -1217,7 +1217,7 @@
                 topicsList.innerHTML = `
                     <div class="col-12">
                         <div class="alert alert-warning">
-                            ⚠️ Không thể tải chủ đề Hot. <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Thử lại</button>
+                            <i class="fas fa-exclamation-triangle me-1"></i>Không thể tải chủ đề Hot. <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Thử lại</button>
                         </div>
                     </div>
                 `;
@@ -1270,8 +1270,8 @@
             
             if (!topics || topics.length === 0) {
                 const message = isFiltered ? 
-                    '🔍 Không tìm thấy chủ đề nào phù hợp với bộ lọc.' :
-                    '📋 Không có chủ đề Hot nào.';
+                    '<i class="fas fa-search me-1"></i>Không tìm thấy chủ đề nào phù hợp với bộ lọc.' :
+                    '<i class="fas fa-list me-1"></i>Không có chủ đề Hot nào.';
                 const buttonText = isFiltered ? 'Xóa bộ lọc' : 'Tải lại';
                 const buttonAction = isFiltered ? 'clearFilters()' : 'loadHotTopics()';
                 
@@ -1288,7 +1288,7 @@
             // Update topics counter
             updateTopicsCounter(topics.length, window.allHotTopics.length, isFiltered);
             
-            const topicsHTML = topics.map((topic, index) => `
+                            const topicsHTML = topics.map((topic, index) => `
                 <div class="col-md-6 mb-3">
                     <div class="card hot-topic-card h-100" 
                          data-title="${topic.title}"
@@ -1304,7 +1304,7 @@
                             <h6 class="card-title">${topic.title}</h6>
                             <p class="card-text text-muted small">${topic.description}</p>
                             <div class="d-flex justify-content-between align-items-center">
-                                <small class="text-success">🔥 Trend: ${topic.score}%</small>
+                                <small class="text-success"><i class="fas fa-fire me-1"></i>Trend: ${topic.score}%</small>
                                 <small class="text-muted">${topic.category}</small>
                             </div>
                         </div>
@@ -1360,10 +1360,10 @@
             const counter = document.getElementById('topicsCounter');
             if (counter) {
                 if (isFiltered) {
-                    counter.innerHTML = `📊 Hiển thị <strong>${filteredCount}</strong>/<strong>${totalCount}</strong> chủ đề`;
+                    counter.innerHTML = `<i class="fas fa-filter me-1"></i>Hiển thị <strong>${filteredCount}</strong>/<strong>${totalCount}</strong> chủ đề`;
                     counter.className = 'text-info fw-bold';
                 } else {
-                    counter.innerHTML = `📊 Tổng cộng <strong>${totalCount}</strong> chủ đề Hot`;
+                    counter.innerHTML = `<i class="fas fa-list-ul me-1"></i>Tổng cộng <strong>${totalCount}</strong> chủ đề Hot`;
                     counter.className = 'text-muted';
                 }
             }
@@ -1389,11 +1389,11 @@
             
             // Reset to default options with counts
             categoryFilter.innerHTML = `
-                <option value="all">🌟 Tất cả chuyên mục (${stats.total || 0})</option>
-                <option value="Kinh tế">💼 Kinh tế (${categories['Kinh tế'] || 0})</option>
-                <option value="Công nghệ">💻 Công nghệ (${categories['Công nghệ'] || 0})</option>
-                <option value="Xã hội">👥 Xã hội (${categories['Xã hội'] || 0})</option>
-                <option value="Văn hóa">🎭 Văn hóa (${categories['Văn hóa'] || 0})</option>
+                <option value="all">Tất cả chuyên mục (${stats.total || 0})</option>
+                <option value="Kinh tế">Kinh tế (${categories['Kinh tế'] || 0})</option>
+                <option value="Công nghệ">Công nghệ (${categories['Công nghệ'] || 0})</option>
+                <option value="Xã hội">Xã hội (${categories['Xã hội'] || 0})</option>
+                <option value="Văn hóa">Văn hóa (${categories['Văn hóa'] || 0})</option>
             `;
             
             // Update score filter options
@@ -1401,9 +1401,9 @@
             const scoreRanges = stats.scoreRanges || {};
             scoreFilter.innerHTML = `
                 <option value="all">Tất cả mức độ (${stats.total || 0})</option>
-                <option value="90">🔥 Siêu Hot 90%+ (${scoreRanges.super_hot || 0})</option>
-                <option value="80">⭐ Hot 80%+ (${(scoreRanges.super_hot || 0) + (scoreRanges.hot || 0)})</option>
-                <option value="70">📈 Trending 70%+ (${stats.total || 0})</option>
+                <option value="90">Siêu Hot 90%+ (${scoreRanges.super_hot || 0})</option>
+                <option value="80">Hot 80%+ (${(scoreRanges.super_hot || 0) + (scoreRanges.hot || 0)})</option>
+                <option value="70">Trending 70%+ (${stats.total || 0})</option>
             `;
             
             // Update source filter options  
@@ -1416,10 +1416,10 @@
             
             sourceFilter.innerHTML = `
                 <option value="all">Tất cả nguồn (${stats.total || 0})</option>
-                <option value="Current Events">🔥 Current Events (${currentEvents})</option>
-                <option value="Tech Trends">💻 Tech Trends (${techTrends})</option>
-                <option value="Vietnamese">🇻🇳 Vietnamese Topics (${vietnamese})</option>
-                <option value="Fallback">📋 General Topics (${fallback})</option>
+                <option value="Current Events">Current Events (${currentEvents})</option>
+                <option value="Tech Trends">Tech Trends (${techTrends})</option>
+                <option value="Vietnamese">Vietnamese Topics (${vietnamese})</option>
+                <option value="Fallback">General Topics (${fallback})</option>
             `;
         }
 
