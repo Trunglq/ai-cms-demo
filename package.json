@@ -4,7 +4,8 @@
   "description": "AI CMS Demo with translation and journalism features",
   "main": "index.html",
   "dependencies": {
-    "cheerio": "^1.0.0-rc.12"
+    "cheerio": "^1.0.0-rc.12",
+    "puppeteer": "^21.0.0"
   },
   "scripts": {
     "start": "python -m http.server 8080"
