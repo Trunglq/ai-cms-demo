@@ -1,4 +1,6 @@
 const cheerio = require('cheerio');
+const { Readability } = require('@mozilla/readability');
+const { JSDOM } = require('jsdom');
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -14,39 +16,23 @@ export default async function handler(req, res) {
 
     console.log(`Processing URL: ${url} with direction: ${direction}`);
 
-    // Try advanced crawler first for Vietnamese sites
+    // Extract content using Mozilla Readability
     const hostname = new URL(url).hostname.toLowerCase();
-    const isVietnameseSite = hostname.includes('vnexpress') || 
-                           hostname.includes('vietnamnet') || 
-                           hostname.includes('vneconomy') || 
-                           hostname.includes('zingnews') || 
-                           hostname.includes('dantri') || 
-                           hostname.includes('24h.com') ||
-                           hostname.includes('thanhnien') ||
-                           hostname.includes('tuoitre') ||
-                           hostname.includes('vietnamplus');
+    console.log(`Processing ${hostname} with Mozilla Readability...`);
 
     let title = '';
     let content = '';
 
-    if (isVietnameseSite) {
-      console.log('Vietnamese site detected, using advanced crawler...');
-      try {
-        const crawledData = await advancedCrawler(url, hostname);
-        title = crawledData.title;
-        content = crawledData.content;
-        console.log(`Advanced crawler result: title=${title.length} chars, content=${content.length} chars`);
-      } catch (crawlerError) {
-        console.log('Advanced crawler failed, falling back to basic extraction:', crawlerError.message);
-      }
-    }
-
-    // Fallback to basic extraction if advanced crawler failed or for non-Vietnamese sites
-    if (!content || content.length < 100) {
-      console.log('Using basic extraction fallback...');
+    try {
+      const readabilityData = await readabilityExtraction(url, hostname);
+      title = readabilityData.title;
+      content = readabilityData.content;
+      console.log(`Readability result: title=${title?.length || 0} chars, content=${content?.length || 0} chars`);
+    } catch (readabilityError) {
+      console.log('Readability extraction failed, falling back to basic extraction:', readabilityError.message);
       const basicData = await basicExtraction(url, hostname);
-      title = title || basicData.title;
-      content = content || basicData.content;
+      title = basicData.title;
+      content = basicData.content;
     }
 
     if (!title && !content) {
@@ -74,9 +60,10 @@ export default async function handler(req, res) {
       },
       debug: {
         hostname: hostname,
-        extractionMethod: content ? 'success' : 'failed',
+        extractionMethod: content ? (content.length > 500 ? 'readability' : 'fallback') : 'failed',
         titleLength: title?.length || 0,
-        contentLength: content?.length || 0
+        contentLength: content?.length || 0,
+        readabilityUsed: content && content.length > 500
       }
     });
 
@@ -84,6 +71,120 @@ export default async function handler(req, res) {
     console.error('Error in translate-url:', error);
     res.status(500).json({ error: 'Lỗi server khi xử lý URL' });
   }
+}
+
+// Mozilla Readability extraction - Primary method
+async function readabilityExtraction(url, hostname) {
+  console.log(`Using Mozilla Readability for ${hostname}...`);
+  
+  try {
+    // Fetch HTML with proper headers to mimic real browser
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en-US,en;q=0.8',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'DNT': '1',
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1',
+        'Sec-Fetch-Dest': 'document',
+        'Sec-Fetch-Mode': 'navigate',
+        'Sec-Fetch-Site': 'none',
+        'Cache-Control': 'no-cache',
+        'Referer': url
+      },
+      timeout: 30000
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const html = await response.text();
+    console.log(`Fetched HTML content: ${html.length} characters`);
+    
+    // Create JSDOM instance
+    const dom = new JSDOM(html, {
+      url: url,
+      contentType: 'text/html',
+      includeNodeLocations: false,
+      storageQuota: 10000000
+    });
+
+    const document = dom.window.document;
+    
+    // Use Mozilla Readability to extract main content
+    const reader = new Readability(document, {
+      debug: false,
+      maxElemsToParse: 0, // Parse all elements
+      nbTopCandidates: 5,
+      charThreshold: 500,
+      classesToPreserve: ['caption', 'credit', 'highlight']
+    });
+
+    const article = reader.parse();
+    
+    if (!article) {
+      throw new Error('Readability could not parse article content');
+    }
+
+    console.log(`Readability extracted: title="${article.title}", content=${article.textContent?.length || 0} chars`);
+    
+    // Clean up the content
+    const cleanContent = cleanReadabilityContent(article.textContent || '');
+    const cleanTitle = cleanReadabilityTitle(article.title || '');
+
+    return {
+      title: cleanTitle,
+      content: cleanContent,
+      readabilityScore: article.length || 0,
+      byline: article.byline || '',
+      excerpt: article.excerpt || ''
+    };
+
+  } catch (error) {
+    console.error(`Readability extraction failed for ${hostname}:`, error.message);
+    throw error;
+  }
+}
+
+// Clean up readability extracted content
+function cleanReadabilityContent(content) {
+  if (!content) return '';
+  
+  return content
+    .replace(/\n\s*\n\s*\n/g, '\n\n') // Remove excessive line breaks
+    .replace(/\s+/g, ' ') // Normalize spaces
+    .replace(/^\s+|\s+$/g, '') // Trim
+    .replace(/\u00A0/g, ' ') // Replace non-breaking spaces
+    .replace(/[^\S\r\n]+/g, ' ') // Normalize whitespace but keep line breaks
+    .split('\n')
+    .filter(line => {
+      const trimmed = line.trim();
+      // Filter out common boilerplate patterns
+      if (trimmed.length < 20) return false;
+      if (trimmed.includes('©') || trimmed.includes('Copyright')) return false;
+      if (trimmed.includes('Tags:') || trimmed.includes('Từ khóa:')) return false;
+      if (trimmed.includes('Chia sẻ:') || trimmed.includes('Share:')) return false;
+      if (trimmed.includes('Subscribe') || trimmed.includes('Newsletter')) return false;
+      if (trimmed.match(/^\d+\/\d+\/\d+/) || trimmed.match(/\d+:\d+/)) return false;
+      return true;
+    })
+    .join('\n\n')
+    .trim();
+}
+
+// Clean up readability extracted title
+function cleanReadabilityTitle(title) {
+  if (!title) return '';
+  
+  return title
+    .replace(/\s+/g, ' ')
+    .replace(/^\s+|\s+$/g, '')
+    .replace(/\s*-\s*.*$/, '') // Remove site name suffix (e.g., "Title - VnExpress")
+    .replace(/\s*\|\s*.*$/, '') // Remove site name suffix (e.g., "Title | VietnamNet")
+    .trim();
 }
 
 // Advanced crawler using Puppeteer for Vietnamese sites
@@ -454,112 +555,97 @@ async function advancedCrawler(url, hostname) {
   }
 }
 
-// Basic extraction fallback (existing code)
+// Simple fallback extraction using Cheerio
 async function basicExtraction(url, hostname) {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-      'Accept-Language': 'vi-VN,vi;q=0.9,en-US,en;q=0.8',
-      'Accept-Encoding': 'gzip, deflate, br',
-      'DNT': '1',
-      'Connection': 'keep-alive',
-      'Upgrade-Insecure-Requests': '1',
-      'Sec-Fetch-Dest': 'document',
-      'Sec-Fetch-Mode': 'navigate',
-      'Sec-Fetch-Site': 'none',
-      'Cache-Control': 'no-cache'
+  console.log(`Using basic extraction fallback for ${hostname}...`);
+  
+  try {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'vi-VN,vi;q=0.9,en;q=0.8',
+        'Cache-Control': 'no-cache'
+      },
+      timeout: 20000
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
     }
-  });
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
+    const html = await response.text();
+    const $ = cheerio.load(html);
 
-  const html = await response.text();
-  const $ = cheerio.load(html);
-
-  let title = '';
-  let content = '';
-
-  // Basic extraction logic - Updated with better paragraph extraction
-  if (hostname.includes('vnexpress')) {
-    title = $('h1.title-detail').text().trim() || $('.title-detail h1').text().trim() || $('h1').first().text().trim();
-    
-    // Try different content extraction methods for VnExpress
-    const contentSelectors = ['.fck_detail p', '.sidebar_1 .fck_detail p', '.content_detail p', 'article p'];
-    for (const selector of contentSelectors) {
-      const paragraphs = $(selector).map((i, el) => $(el).text().trim()).get()
-        .filter(text => text.length > 30 && !text.includes('©') && !text.includes('VnExpress'));
-      if (paragraphs.length >= 2) {
-        content = paragraphs.join('\n\n');
+    // Generic title extraction
+    let title = '';
+    const titleSelectors = ['h1', 'title', '.title', '.article-title', '.detail-title'];
+    for (const selector of titleSelectors) {
+      const titleEl = $(selector).first();
+      if (titleEl.length && titleEl.text().trim()) {
+        title = titleEl.text().trim();
         break;
       }
     }
-  } else if (hostname.includes('vietnamnet')) {
-    title = $('.ArticleTitle').text().trim() || $('.detail-title h1').text().trim() || $('h1').first().text().trim();
+
+    // Generic content extraction - try to find main article content
+    let content = '';
+    const contentSelectors = [
+      'article', '[role="main"]', '.content', '.article-content', 
+      '.post-content', '.entry-content', '.detail-content', 'main'
+    ];
     
-    // Try different content extraction methods for VietnamNet  
-    const contentSelectors = ['.ArticleContent p', '.detail-content-body p', '.content-article-detail p', 'article p'];
     for (const selector of contentSelectors) {
-      const paragraphs = $(selector).map((i, el) => $(el).text().trim()).get()
-        .filter(text => text.length > 30 && !text.includes('©') && !text.includes('VietnamNet'));
-      if (paragraphs.length >= 2) {
-        content = paragraphs.join('\n\n');
-        break;
+      const contentEl = $(selector).first();
+      if (contentEl.length) {
+        // Extract paragraphs from the content area
+        const paragraphs = contentEl.find('p').map((i, el) => $(el).text().trim()).get()
+          .filter(text => {
+            if (text.length < 30) return false;
+            if (text.includes('©') || text.includes('Copyright') || text.includes('Bản quyền')) return false;
+            if (text.includes('Tags:') || text.includes('Từ khóa:')) return false;
+            if (text.includes('Share') || text.includes('Chia sẻ')) return false;
+            return true;
+          });
+        
+        if (paragraphs.length >= 2) {
+          content = paragraphs.slice(0, 10).join('\n\n');
+          break;
+        }
       }
     }
-  } else if (hostname.includes('dantri')) {
-    title = $('h1').first().text().trim() || $('.title-page-detail').text().trim() || $('.detail-title').text().trim();
-    
-    // Try different content extraction methods for Dantri
-    const contentSelectors = ['.singular-content p', '.detail-content p', 'article p', '.content-detail p', '.post-content p'];
-    for (const selector of contentSelectors) {
-      const paragraphs = $(selector).map((i, el) => $(el).text().trim()).get().filter(text => text.length > 30);
-      if (paragraphs.length >= 2) {
-        content = paragraphs.join('\n\n');
-        break;
-      }
-    }
-    
-    // Fallback: try to get all paragraphs
+
+    // Last resort: try all paragraphs on page
     if (!content) {
+      console.log(`Using last resort paragraph extraction for ${hostname}`);
       const allParagraphs = $('p').map((i, el) => $(el).text().trim()).get()
-        .filter(text => text.length > 30 && !text.includes('©') && !text.includes('Tags:'));
+        .filter(text => {
+          if (text.length < 40) return false;
+          if (text.includes('©') || text.includes('Copyright')) return false;
+          if (text.includes('Cookie') || text.includes('Privacy')) return false;
+          if (text.includes('Subscribe') || text.includes('Newsletter')) return false;
+          return true;
+        });
+
       if (allParagraphs.length >= 2) {
-        content = allParagraphs.slice(0, 10).join('\n\n'); // Take first 10 paragraphs
+        content = allParagraphs.slice(0, 8).join('\n\n');
       }
     }
-  } else if (hostname.includes('thanhnien')) {
-    title = $('.detail-title h1').text().trim() || $('.article-title').text().trim() || $('h1').first().text().trim();
-    content = $('.detail-cmain').text().trim() || $('.article-body').text().trim();
-  } else if (hostname.includes('tuoitre')) {
-    title = $('.article-title h1').text().trim() || $('.detail-title').text().trim() || $('h1').first().text().trim();
-    content = $('.detail-content article').text().trim() || $('.article-content').text().trim();
+
+    // Clean up title
+    title = title
+      .replace(/\s*-\s*.*$/, '') // Remove site name suffix
+      .replace(/\s*\|\s*.*$/, '') // Remove site name suffix
+      .trim();
+
+    console.log(`Basic extraction result: title=${title.length} chars, content=${content.length} chars`);
+    
+    return { title: title || '', content: content || '' };
+    
+  } catch (error) {
+    console.error(`Basic extraction failed for ${hostname}:`, error.message);
+    return { title: '', content: '' };
   }
-
-  // Generic fallback for Vietnamese news sites if specific methods failed
-  if (!content) {
-    console.log(`Trying generic fallback for ${hostname}`);
-    const allParagraphs = $('p').map((i, el) => $(el).text().trim()).get()
-      .filter(text => {
-        if (text.length < 50) return false; // Increase minimum length
-        if (text.includes('©') || text.includes('Copyright') || text.includes('Bản quyền')) return false;
-        if (text.includes('Tags:') || text.includes('Từ khóa:') || text.includes('Tag:')) return false;
-        if (text.includes('Chia sẻ') || text.includes('Share') || text.includes('Facebook')) return false;
-        if (text.includes('Theo ') && text.includes(' -')) return false; // Remove author attribution
-        if (text.match(/^\d+\/\d+\/\d+/) || text.match(/\d+:\d+/)) return false; // Remove dates/times
-        if (text.includes('đọc thêm') || text.includes('xem thêm')) return false;
-        return true;
-      });
-
-    if (allParagraphs.length >= 3) {
-      content = allParagraphs.slice(0, 15).join('\n\n'); // Take first 15 good paragraphs
-      console.log(`Generic fallback found ${allParagraphs.length} paragraphs for ${hostname}`);
-    }
-  }
-
-  return { title, content };
 }
 
 // Translation function (existing code)

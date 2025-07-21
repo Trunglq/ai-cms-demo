@@ -4,13 +4,20 @@
   "description": "AI CMS Demo with translation and journalism features",
   "main": "index.html",
   "dependencies": {
+    "@mozilla/readability": "^0.6.0",
     "cheerio": "^1.0.0-rc.12",
+    "jsdom": "^26.1.0",
     "puppeteer": "^21.0.0"
   },
   "scripts": {
     "start": "python -m http.server 8080"
   },
-  "keywords": ["ai", "cms", "journalism", "translation"],
+  "keywords": [
+    "ai",
+    "cms",
+    "journalism",
+    "translation"
+  ],
   "author": "AI CMS Demo",
   "license": "MIT"
-} 
+}
