@@ -15,7 +15,23 @@ module.exports = async (req, res) => {
   }
 
   const langText = language === 'vi' ? 'tiếng Việt' : 'tiếng Anh';
-  const prompt = `Kiểm tra và sửa lỗi chính tả, ngữ pháp trong văn bản ${langText} sau: ${text}. Trả về văn bản đã sửa.`;
+  const prompt = `Kiểm tra và sửa lỗi chính tả, ngữ pháp trong văn bản ${langText} theo chuẩn báo chí. Yêu cầu:
+
+${language === 'vi' ? 
+`- Tuân thủ quy chuẩn chính tả và ngữ pháp báo chí Việt Nam
+- Sử dụng thuật ngữ báo chí chính xác và phù hợp
+- Văn phong khách quan, súc tích, chuyên nghiệp
+- Cấu trúc câu rõ ràng, dễ hiểu cho độc giả
+- Sử dụng dấu câu đúng chuẩn báo chí Việt Nam` :
+`- Follow international journalism writing standards (AP Style/Reuters)
+- Use appropriate journalistic terminology and professional language
+- Maintain objective, concise, and professional tone
+- Ensure clear sentence structure for readers
+- Use proper punctuation according to journalism standards`}
+
+Văn bản gốc: ${text}
+
+Trả về văn bản đã được kiểm tra và sửa lỗi theo chuẩn báo chí.`;
 
   try {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
