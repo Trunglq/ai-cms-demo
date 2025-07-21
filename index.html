@@ -196,13 +196,23 @@
                             
                             <!-- Errors Section -->
                             <div id="errorsSection" style="display: none;">
-                                <h5 class="text-danger">🔴 Lỗi cần sửa:</h5>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="text-danger mb-0">🔴 Lỗi cần sửa:</h5>
+                                    <button id="fixAllBtn" class="btn btn-danger btn-sm" onclick="applyAllChanges('error')">
+                                        🔧 Sửa tất cả
+                                    </button>
+                                </div>
                                 <div id="errorsList" class="mb-3"></div>
                             </div>
                             
                             <!-- Suggestions Section -->
                             <div id="suggestionsSection" style="display: none;">
-                                <h5 class="text-info">💡 Gợi ý cải thiện (tùy chọn):</h5>
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <h5 class="text-info mb-0">💡 Gợi ý cải thiện (tùy chọn):</h5>
+                                    <button id="applyAllSuggestionsBtn" class="btn btn-info btn-sm" onclick="applyAllChanges('suggestion')">
+                                        💡 Áp dụng tất cả
+                                    </button>
+                                </div>
                                 <div id="suggestionsList" class="mb-3"></div>
                             </div>
                             
@@ -215,8 +225,13 @@
                                         <div id="originalText" class="border p-3 bg-light" style="min-height: 100px;"></div>
                                     </div>
                                     <div class="col-md-6">
-                                        <label class="form-label">Văn bản sau khi áp dụng:</label>
-                                        <div id="finalText" class="border p-3 bg-light" style="min-height: 100px;"></div>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <label class="form-label">Văn bản sau khi áp dụng:</label>
+                                            <button id="copyFinalTextBtn" class="btn btn-sm btn-outline-success" onclick="copyFinalText()" style="display: none;">
+                                                📋 Copy kết quả
+                                            </button>
+                                        </div>
+                                        <div id="finalText" class="border p-3 bg-light" style="min-height: 100px; position: relative;"></div>
                                     </div>
                                 </div>
                             </div>
@@ -225,6 +240,9 @@
 
                     // Spell Check Logic with new UI
                     window.appliedChanges = new Set();
+                    window.allErrors = [];
+                    window.allSuggestions = [];
+                    window.originalText = '';
                     
                     document.getElementById('checkBtn').addEventListener('click', async () => {
                         const input = document.getElementById('inputText').value;
@@ -249,8 +267,11 @@
                             // Show results section
                             document.getElementById('resultsSection').style.display = 'block';
                             
-                            // Reset applied changes
+                            // Store data globally
                             window.appliedChanges.clear();
+                            window.allErrors = result.errors || [];
+                            window.allSuggestions = result.suggestions || [];
+                            window.originalText = input;
                             
                             // Show status
                             const statusAlert = document.getElementById('statusAlert');
@@ -282,7 +303,7 @@
                                 
                                 // Show preview
                                 document.getElementById('previewSection').style.display = 'block';
-                                updatePreview(input, result.errors, result.suggestions);
+                                updatePreviewFromAppliedChanges();
                             }
                             
                         } catch (error) {
@@ -330,6 +351,33 @@
                         container.innerHTML = html;
                     }
                     
+                    // Apply all changes of a specific type
+                    window.applyAllChanges = function(type) {
+                        const changes = type === 'error' ? window.allErrors : window.allSuggestions;
+                        changes.forEach((change, index) => {
+                            const changeId = `${type}_${index}`;
+                            window.appliedChanges.add(changeId);
+                            
+                            // Update button appearance
+                            const button = document.querySelector(`[onclick*="${changeId}"]`);
+                            if (button) {
+                                button.textContent = '✅ Đã áp dụng';
+                                button.classList.remove('btn-danger', 'btn-outline-info');
+                                button.classList.add('btn-success');
+                            }
+                        });
+                        
+                        updatePreviewFromAppliedChanges();
+                        
+                        // Update the "Apply All" button
+                        const applyAllBtn = type === 'error' ? 
+                            document.getElementById('fixAllBtn') : 
+                            document.getElementById('applyAllSuggestionsBtn');
+                        applyAllBtn.textContent = `✅ Đã áp dụng tất cả`;
+                        applyAllBtn.classList.add('btn-success');
+                        applyAllBtn.disabled = true;
+                    };
+                    
                     window.toggleChange = function(changeId, fromText, toText, button) {
                         if (window.appliedChanges.has(changeId)) {
                             window.appliedChanges.delete(changeId);
@@ -345,25 +393,154 @@
                         
                         // Update preview
                         updatePreviewFromAppliedChanges();
+                        
+                        // Update "Apply All" button status
+                        updateApplyAllButtonStatus();
                     };
                     
-                    function updatePreview(originalText, errors, suggestions) {
-                        document.getElementById('originalText').textContent = originalText;
-                        updatePreviewFromAppliedChanges();
+                    function updateApplyAllButtonStatus() {
+                        // Check errors
+                        const appliedErrors = window.allErrors.filter((_, index) => 
+                            window.appliedChanges.has(`error_${index}`)
+                        ).length;
+                        const fixAllBtn = document.getElementById('fixAllBtn');
+                        if (fixAllBtn) {
+                            if (appliedErrors === window.allErrors.length && window.allErrors.length > 0) {
+                                fixAllBtn.textContent = '✅ Đã sửa tất cả';
+                                fixAllBtn.classList.add('btn-success');
+                                fixAllBtn.disabled = true;
+                            } else {
+                                fixAllBtn.textContent = '🔧 Sửa tất cả';
+                                fixAllBtn.classList.remove('btn-success');
+                                fixAllBtn.disabled = false;
+                            }
+                        }
+                        
+                        // Check suggestions
+                        const appliedSuggestions = window.allSuggestions.filter((_, index) => 
+                            window.appliedChanges.has(`suggestion_${index}`)
+                        ).length;
+                        const applyAllBtn = document.getElementById('applyAllSuggestionsBtn');
+                        if (applyAllBtn) {
+                            if (appliedSuggestions === window.allSuggestions.length && window.allSuggestions.length > 0) {
+                                applyAllBtn.textContent = '✅ Đã áp dụng tất cả';
+                                applyAllBtn.classList.add('btn-success');
+                                applyAllBtn.disabled = true;
+                            } else {
+                                applyAllBtn.textContent = '💡 Áp dụng tất cả';
+                                applyAllBtn.classList.remove('btn-success');
+                                applyAllBtn.disabled = false;
+                            }
+                        }
                     }
                     
                     function updatePreviewFromAppliedChanges() {
-                        const input = document.getElementById('inputText').value;
-                        let finalText = input;
+                        let originalText = window.originalText;
+                        let finalText = window.originalText;
                         
-                        // Apply all selected changes
+                        // Apply all selected changes with highlighting
+                        const allChangesToApply = [];
+                        
+                        // Collect all applied changes
                         window.appliedChanges.forEach(changeId => {
                             const [type, index] = changeId.split('_');
-                            // Get the change data (this would need to be stored globally)
-                            // For now, we'll update this in the next iteration
+                            const changes = type === 'error' ? window.allErrors : window.allSuggestions;
+                            const change = changes[parseInt(index)];
+                            if (change) {
+                                allChangesToApply.push({...change, type, applied: true});
+                            }
                         });
                         
-                        document.getElementById('finalText').textContent = finalText;
+                        // Also collect non-applied changes for highlighting
+                        [...window.allErrors, ...window.allSuggestions].forEach((change, globalIndex) => {
+                            const type = globalIndex < window.allErrors.length ? 'error' : 'suggestion';
+                            const localIndex = type === 'error' ? globalIndex : globalIndex - window.allErrors.length;
+                            const changeId = `${type}_${localIndex}`;
+                            
+                            if (!window.appliedChanges.has(changeId)) {
+                                allChangesToApply.push({...change, type, applied: false});
+                            }
+                        });
+                        
+                        // Sort changes by position in text (reverse order to avoid position shifts)
+                        allChangesToApply.sort((a, b) => {
+                            const posA = originalText.indexOf(a.from);
+                            const posB = originalText.indexOf(b.from);
+                            return posB - posA;
+                        });
+                        
+                        // Apply changes to final text and create highlighted versions
+                        let highlightedOriginal = originalText;
+                        let highlightedFinal = originalText;
+                        
+                        allChangesToApply.forEach(change => {
+                            const fromRegex = new RegExp(escapeRegex(change.from), 'g');
+                            
+                            if (change.applied) {
+                                // Apply the change to final text
+                                finalText = finalText.replace(fromRegex, change.to);
+                                
+                                // Highlight in original (red = will be changed)
+                                highlightedOriginal = highlightedOriginal.replace(fromRegex, 
+                                    `<span style="background-color: #ffebee; text-decoration: line-through; color: #c62828;">${change.from}</span>`
+                                );
+                                
+                                // Highlight in final (green = changed)
+                                highlightedFinal = highlightedFinal.replace(new RegExp(escapeRegex(change.to), 'g'), 
+                                    `<span style="background-color: #e8f5e8; font-weight: bold; color: #2e7d32;">${change.to}</span>`
+                                );
+                            } else {
+                                // Just highlight as available for change (yellow)
+                                const isError = change.type === 'error';
+                                const highlightColor = isError ? '#fff3e0' : '#f3e5f5';
+                                const borderColor = isError ? '#ff9800' : '#9c27b0';
+                                
+                                highlightedOriginal = highlightedOriginal.replace(fromRegex, 
+                                    `<span style="background-color: ${highlightColor}; border: 1px solid ${borderColor}; border-radius: 2px; padding: 1px 2px;">${change.from}</span>`
+                                );
+                            }
+                        });
+                        
+                        // Update the display - use innerHTML for highlighting
+                        document.getElementById('originalText').innerHTML = highlightedOriginal || originalText;
+                        
+                        const hasAppliedChanges = allChangesToApply.some(c => c.applied);
+                        if (hasAppliedChanges) {
+                            document.getElementById('finalText').innerHTML = highlightedFinal;
+                            document.getElementById('copyFinalTextBtn').style.display = 'inline-block';
+                            // Store clean text for copying
+                            window.finalCleanText = finalText;
+                        } else {
+                            document.getElementById('finalText').innerHTML = '<em class="text-muted">Chọn các thay đổi bên trên để xem preview...</em>';
+                            document.getElementById('copyFinalTextBtn').style.display = 'none';
+                            window.finalCleanText = '';
+                        }
+                    }
+                    
+                    // Copy final text function
+                    window.copyFinalText = function() {
+                        const textToCopy = window.finalCleanText || window.originalText;
+                        if (textToCopy) {
+                            navigator.clipboard.writeText(textToCopy).then(() => {
+                                const copyBtn = document.getElementById('copyFinalTextBtn');
+                                const originalText = copyBtn.innerHTML;
+                                copyBtn.innerHTML = '✅ Đã copy!';
+                                copyBtn.classList.add('btn-success');
+                                copyBtn.classList.remove('btn-outline-success');
+                                setTimeout(() => {
+                                    copyBtn.innerHTML = originalText;
+                                    copyBtn.classList.remove('btn-success');
+                                    copyBtn.classList.add('btn-outline-success');
+                                }, 2000);
+                            }).catch(err => {
+                                console.error('Failed to copy: ', err);
+                                alert('Không thể copy. Vui lòng copy thủ công.');
+                            });
+                        }
+                    };
+                    
+                    function escapeRegex(string) {
+                        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
                     }
                 } else if (feature === 'translate-url') {
                     content.innerHTML = `
