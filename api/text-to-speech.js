@@ -5,15 +5,111 @@ const path = require('path');
 // Initialize Google Cloud TTS client
 let ttsClient;
 
-console.log('🚀 TTS API Initializing... v3-ENHANCED');
+console.log('🚀 TTS API Initializing... v4-MULTIPART');
 console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
 console.log('📊 All env vars with GOOGLE:', Object.keys(process.env).filter(k => k.includes('GOOGLE')));
 
-// Enhanced credential loading function
+// Enhanced credential loading function with multi-part support
 function loadGoogleCredentials() {
+    console.log('\n🔍 Loading Google Cloud credentials...');
+    
+    // Method 1: Try multi-part Base64 (GOOGLE_CLOUD_KEY_PART1, PART2, etc.)
+    console.log('📋 Method 1: Multi-part Base64 credentials');
+    const multiPartCredentials = loadMultiPartBase64Credentials();
+    if (multiPartCredentials) {
+        console.log('✅ Multi-part credentials loaded successfully!');
+        return multiPartCredentials;
+    }
+    
+    // Method 2: Try single Base64 (backward compatibility)
+    console.log('📋 Method 2: Single Base64 credentials');
+    const singleCredentials = loadSingleCredentials();
+    if (singleCredentials) {
+        console.log('✅ Single credentials loaded successfully!');
+        return singleCredentials;
+    }
+    
+    console.log('❌ No valid credentials found');
+    return null;
+}
+
+function loadMultiPartBase64Credentials() {
+    console.log('🔍 Checking for multi-part Base64 credentials...');
+    
+    // Check for parts (PART1, PART2, PART3, PART4, etc.)
+    const parts = [];
+    let partIndex = 1;
+    
+    while (true) {
+        const partKey = `GOOGLE_CLOUD_KEY_PART${partIndex}`;
+        const partValue = process.env[partKey];
+        
+        if (!partValue) {
+            console.log(`📊 No ${partKey} found, stopping at ${partIndex - 1} parts`);
+            break;
+        }
+        
+        console.log(`📋 Found ${partKey}: ${partValue.length} chars`);
+        parts.push(partValue);
+        partIndex++;
+        
+        // Safety limit to prevent infinite loop
+        if (partIndex > 10) {
+            console.log('⚠️ Safety limit reached (10 parts max)');
+            break;
+        }
+    }
+    
+    if (parts.length === 0) {
+        console.log('📊 No multi-part credentials found');
+        return null;
+    }
+    
+    try {
+        // Combine all parts
+        const combinedBase64 = parts.join('');
+        console.log(`🔗 Combined ${parts.length} parts into ${combinedBase64.length} characters`);
+        console.log(`📊 Combined preview: ${combinedBase64.substring(0, 100)}...`);
+        
+        // Decode Base64
+        console.log('🔓 Decoding combined Base64...');
+        const decoded = Buffer.from(combinedBase64, 'base64').toString('utf8');
+        console.log(`✅ Base64 decoded: ${decoded.length} characters`);
+        
+        // Parse JSON
+        console.log('📝 Parsing decoded JSON...');
+        const credentials = JSON.parse(decoded);
+        
+        // Validate required fields
+        const requiredFields = ['type', 'project_id', 'private_key', 'client_email'];
+        const missingFields = requiredFields.filter(field => !credentials[field]);
+        
+        if (missingFields.length > 0) {
+            console.log('❌ Missing required fields:', missingFields);
+            return null;
+        }
+        
+        console.log('🔧 Valid multi-part credentials found:');
+        console.log('  Project ID:', credentials.project_id);
+        console.log('  Client Email:', credentials.client_email);
+        console.log('  Type:', credentials.type);
+        console.log('  Parts used:', parts.length);
+        
+        return credentials;
+        
+    } catch (error) {
+        console.log('❌ Multi-part credentials failed:', error.message);
+        if (error instanceof SyntaxError) {
+            console.log('📊 JSON parse error - check if all parts are correct');
+        }
+        return null;
+    }
+}
+
+function loadSingleCredentials() {
     const possibleKeys = [
         'GOOGLE_CLOUD_KEY_JSON',
-        'GOOGLE_CLOUD_KEY_BASE64', 
+        'GOOGLE_CLOUD_KEY_BASE64',
         'GOOGLE_CLOUD_CREDENTIALS',
         'GOOGLE_APPLICATION_CREDENTIALS',
         'GCP_SERVICE_ACCOUNT_KEY'
@@ -52,22 +148,16 @@ function loadGoogleCredentials() {
                 continue;
             }
             
-            console.log('🔧 Valid credentials found:');
+            console.log('🔧 Valid single credentials found:');
             console.log('  Project ID:', credentials.project_id);
             console.log('  Client Email:', credentials.client_email);
             console.log('  Type:', credentials.type);
+            console.log('  Source:', keyName);
             
             return credentials;
             
         } catch (error) {
             console.log(`❌ Failed to parse ${keyName}:`, error.message);
-            
-            // For JSON parse errors, show more details
-            if (error instanceof SyntaxError) {
-                console.log(`📊 ${keyName} length:`, value.length);
-                console.log(`📊 Error position:`, error.message);
-                console.log(`📊 Content around error:`, value.substring(Math.max(0, value.length - 100)));
-            }
             continue;
         }
     }
@@ -79,7 +169,7 @@ try {
     const credentials = loadGoogleCredentials();
     
     if (credentials) {
-        console.log('🔑 Initializing Google Cloud TTS with valid credentials...');
+        console.log('\n🔑 Initializing Google Cloud TTS with valid credentials...');
         
         ttsClient = new textToSpeech.TextToSpeechClient({
             projectId: credentials.project_id,
@@ -88,9 +178,11 @@ try {
         
         console.log('✅ Google Cloud TTS initialized successfully');
         console.log('🌟 PRODUCTION MODE - Real TTS active');
+        console.log('📊 Project:', credentials.project_id);
+        console.log('📊 Service Account:', credentials.client_email);
     } else {
         console.log('⚠️ No valid Google Cloud credentials found');
-        console.log('📊 Checked keys:', ['GOOGLE_CLOUD_KEY_JSON', 'GOOGLE_CLOUD_KEY_BASE64', 'GOOGLE_CLOUD_CREDENTIALS']);
+        console.log('📊 Checked for multi-part and single credentials');
         console.log('🎭 Falling back to demo mode');
         ttsClient = null;
     }

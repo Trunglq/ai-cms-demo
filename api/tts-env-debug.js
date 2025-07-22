@@ -10,7 +10,7 @@ module.exports = async (req, res) => {
 
     const debug = {
         timestamp: new Date().toISOString(),
-        environment: 'Vercel Production Environment Debug v2',
+        environment: 'Vercel Production Environment Debug v3-MULTIPART',
         nodeVersion: process.version,
         platform: process.platform,
         arch: process.arch
@@ -65,67 +65,121 @@ module.exports = async (req, res) => {
         }
     });
 
-    // 2. Specific Key Checks - UPDATED to include BASE64
-    debug.keyChecks = {};
+    // 2. Multi-Part Credentials Check
+    debug.multiPartCheck = {
+        partsFound: 0,
+        parts: [],
+        totalLength: 0,
+        isValid: false
+    };
+
+    // Check for multi-part credentials
+    let partIndex = 1;
+    while (partIndex <= 10) { // Max 10 parts
+        const partKey = `GOOGLE_CLOUD_KEY_PART${partIndex}`;
+        const partValue = process.env[partKey];
+        
+        if (!partValue) break;
+        
+        debug.multiPartCheck.parts.push({
+            key: partKey,
+            length: partValue.length,
+            preview: partValue.substring(0, 50) + '...'
+        });
+        debug.multiPartCheck.totalLength += partValue.length;
+        partIndex++;
+    }
+    
+    debug.multiPartCheck.partsFound = debug.multiPartCheck.parts.length;
+
+    // 3. Multi-Part Validation Test
+    debug.multiPartValidation = {};
+    
+    if (debug.multiPartCheck.partsFound > 0) {
+        try {
+            // Combine parts
+            const parts = [];
+            for (let i = 1; i <= debug.multiPartCheck.partsFound; i++) {
+                parts.push(process.env[`GOOGLE_CLOUD_KEY_PART${i}`]);
+            }
+            
+            const combinedBase64 = parts.join('');
+            debug.multiPartValidation.combinedLength = combinedBase64.length;
+            debug.multiPartValidation.combinedPreview = combinedBase64.substring(0, 100) + '...';
+            
+            // Decode Base64
+            const decoded = Buffer.from(combinedBase64, 'base64').toString('utf8');
+            debug.multiPartValidation.decodedLength = decoded.length;
+            debug.multiPartValidation.decodedSuccessful = true;
+            
+            // Parse JSON
+            const credentials = JSON.parse(decoded);
+            debug.multiPartValidation.jsonParseSuccessful = true;
+            debug.multiPartValidation.projectId = credentials.project_id;
+            debug.multiPartValidation.clientEmail = credentials.client_email;
+            debug.multiPartValidation.type = credentials.type;
+            
+            // Check required fields
+            const requiredFields = ['type', 'project_id', 'private_key', 'client_email'];
+            const missingFields = requiredFields.filter(field => !credentials[field]);
+            debug.multiPartValidation.hasRequiredFields = missingFields.length === 0;
+            debug.multiPartValidation.missingFields = missingFields;
+            
+            debug.multiPartCheck.isValid = debug.multiPartValidation.hasRequiredFields;
+            
+        } catch (error) {
+            debug.multiPartValidation.error = error.message;
+            debug.multiPartValidation.decodedSuccessful = false;
+            debug.multiPartValidation.jsonParseSuccessful = false;
+            debug.multiPartCheck.isValid = false;
+        }
+    }
+
+    // 4. Single Credentials Check (backward compatibility)
+    debug.singleCredentialCheck = {};
     
     const possibleKeys = [
         'GOOGLE_CLOUD_KEY_JSON',
-        'GOOGLE_CLOUD_KEY_BASE64',  // ADDED THIS!
+        'GOOGLE_CLOUD_KEY_BASE64',
         'GOOGLE_CLOUD_CREDENTIALS',
-        'GOOGLE_APPLICATION_CREDENTIALS', 
-        'GCP_SERVICE_ACCOUNT_KEY',
-        'GOOGLE_SERVICE_ACCOUNT_KEY',
-        'GOOGLE_CLOUD_SERVICE_ACCOUNT',
-        'TTS_CREDENTIALS',
-        'GOOGLE_TTS_CREDENTIALS'
+        'GOOGLE_APPLICATION_CREDENTIALS',
+        'GCP_SERVICE_ACCOUNT_KEY'
     ];
     
     possibleKeys.forEach(keyName => {
         const value = process.env[keyName];
-        debug.keyChecks[keyName] = {
+        debug.singleCredentialCheck[keyName] = {
             exists: !!value,
             length: value ? value.length : 0,
-            isJSON: false,
-            validJSON: false,
-            hasRequiredFields: false,
-            preview: value ? value.substring(0, 100) + '...' : null
+            isValid: false
         };
         
         if (value) {
             try {
-                let parsedCredentials;
-                
-                // Handle Base64 decoding first
+                let credentials;
                 if (keyName.includes('BASE64')) {
-                    console.log(`🔓 Decoding Base64 for ${keyName}...`);
                     const decoded = Buffer.from(value, 'base64').toString('utf8');
-                    parsedCredentials = JSON.parse(decoded);
-                    debug.keyChecks[keyName].decodedFromBase64 = true;
-                    debug.keyChecks[keyName].decodedLength = decoded.length;
+                    credentials = JSON.parse(decoded);
                 } else {
-                    parsedCredentials = JSON.parse(value);
-                    debug.keyChecks[keyName].decodedFromBase64 = false;
+                    credentials = JSON.parse(value);
                 }
                 
-                debug.keyChecks[keyName].isJSON = true;
-                debug.keyChecks[keyName].validJSON = true;
-                debug.keyChecks[keyName].hasRequiredFields = !!(
-                    parsedCredentials.type &&
-                    parsedCredentials.project_id &&
-                    parsedCredentials.private_key &&
-                    parsedCredentials.client_email
-                );
-                debug.keyChecks[keyName].projectId = parsedCredentials.project_id;
-                debug.keyChecks[keyName].clientEmail = parsedCredentials.client_email;
-                debug.keyChecks[keyName].type = parsedCredentials.type;
+                const requiredFields = ['type', 'project_id', 'private_key', 'client_email'];
+                const hasAllFields = requiredFields.every(field => credentials[field]);
+                
+                debug.singleCredentialCheck[keyName].isValid = hasAllFields;
+                if (hasAllFields) {
+                    debug.singleCredentialCheck[keyName].projectId = credentials.project_id;
+                    debug.singleCredentialCheck[keyName].clientEmail = credentials.client_email;
+                }
+                
             } catch (e) {
-                debug.keyChecks[keyName].isJSON = false;
-                debug.keyChecks[keyName].parseError = e.message;
+                debug.singleCredentialCheck[keyName].parseError = e.message;
             }
         }
     });
 
-    // 3. TTS Module Check
+    // 5. TTS Module Check
     debug.moduleChecks = {};
     
     try {
@@ -141,65 +195,37 @@ module.exports = async (req, res) => {
         };
     }
 
-    // 4. Test Enhanced TTS Logic
-    debug.enhancedTTSTest = {};
-    
-    try {
-        // Simulate the enhanced credential loading logic
-        const possibleCredKeys = [
-            'GOOGLE_CLOUD_KEY_JSON',
-            'GOOGLE_CLOUD_KEY_BASE64', 
-            'GOOGLE_CLOUD_CREDENTIALS',
-            'GOOGLE_APPLICATION_CREDENTIALS',
-            'GCP_SERVICE_ACCOUNT_KEY'
-        ];
+    // 6. Overall Assessment
+    debug.assessment = {
+        credentialsFound: false,
+        credentialType: null,
+        recommendation: null
+    };
 
-        let foundCredentials = null;
-        let credentialSource = null;
-
-        for (const keyName of possibleCredKeys) {
-            const value = process.env[keyName];
-            if (!value) continue;
-
-            try {
-                let credentials;
-                
-                if (keyName.includes('BASE64')) {
-                    const decoded = Buffer.from(value, 'base64').toString('utf8');
-                    credentials = JSON.parse(decoded);
-                    credentialSource = `${keyName} (Base64 decoded)`;
-                } else {
-                    credentials = JSON.parse(value);
-                    credentialSource = keyName;
-                }
-                
-                const requiredFields = ['type', 'project_id', 'private_key', 'client_email'];
-                const missingFields = requiredFields.filter(field => !credentials[field]);
-                
-                if (missingFields.length === 0) {
-                    foundCredentials = credentials;
-                    break;
-                }
-                
-            } catch (error) {
-                continue;
-            }
+    if (debug.multiPartCheck.isValid) {
+        debug.assessment.credentialsFound = true;
+        debug.assessment.credentialType = 'Multi-part Base64';
+        debug.assessment.partsUsed = debug.multiPartCheck.partsFound;
+        debug.assessment.recommendation = 'Multi-part credentials are valid! TTS should work in Production Mode.';
+    } else {
+        // Check single credentials
+        const validSingleCredential = Object.entries(debug.singleCredentialCheck)
+            .find(([key, info]) => info.isValid);
+            
+        if (validSingleCredential) {
+            debug.assessment.credentialsFound = true;
+            debug.assessment.credentialType = 'Single credential';
+            debug.assessment.credentialSource = validSingleCredential[0];
+            debug.assessment.recommendation = 'Single credentials are valid! TTS should work in Production Mode.';
+        } else {
+            debug.assessment.credentialsFound = false;
+            debug.assessment.recommendation = debug.multiPartCheck.partsFound > 0 
+                ? 'Multi-part credentials found but invalid. Check if all parts are correctly set on Vercel.'
+                : 'No valid credentials found. Add GOOGLE_CLOUD_KEY_PART1, PART2, etc. to Vercel Environment Variables.';
         }
-
-        debug.enhancedTTSTest = {
-            foundValidCredentials: !!foundCredentials,
-            credentialSource: credentialSource,
-            projectId: foundCredentials ? foundCredentials.project_id : null,
-            clientEmail: foundCredentials ? foundCredentials.client_email : null
-        };
-        
-    } catch (e) {
-        debug.enhancedTTSTest = {
-            error: e.message
-        };
     }
 
-    // 5. Deployment Info
+    // 7. Deployment Info
     debug.deploymentInfo = {
         vercelURL: process.env.VERCEL_URL,
         vercelGitCommitRef: process.env.VERCEL_GIT_COMMIT_REF,
@@ -207,38 +233,6 @@ module.exports = async (req, res) => {
         vercelRegion: process.env.VERCEL_REGION,
         vercelEnv: process.env.VERCEL_ENV
     };
-
-    // 6. Updated Recommendations
-    debug.recommendations = [];
-    
-    const hasBase64Key = !!process.env.GOOGLE_CLOUD_KEY_BASE64;
-    const hasJsonKey = !!process.env.GOOGLE_CLOUD_KEY_JSON;
-    
-    if (!hasBase64Key && !hasJsonKey) {
-        debug.recommendations.push({
-            issue: 'No Google Cloud credentials found',
-            solution: 'Add GOOGLE_CLOUD_KEY_BASE64 to Vercel environment variables',
-            priority: 'HIGH'
-        });
-    } else if (hasBase64Key && debug.keyChecks.GOOGLE_CLOUD_KEY_BASE64.validJSON === false) {
-        debug.recommendations.push({
-            issue: 'GOOGLE_CLOUD_KEY_BASE64 exists but invalid Base64/JSON',
-            solution: 'Check Base64 format and ensure it decodes to valid JSON',
-            priority: 'HIGH'
-        });
-    } else if (hasBase64Key && !debug.keyChecks.GOOGLE_CLOUD_KEY_BASE64.hasRequiredFields) {
-        debug.recommendations.push({
-            issue: 'GOOGLE_CLOUD_KEY_BASE64 missing required fields',
-            solution: 'Ensure service account JSON has type, project_id, private_key, client_email',
-            priority: 'HIGH'
-        });
-    } else if (debug.enhancedTTSTest.foundValidCredentials) {
-        debug.recommendations.push({
-            issue: 'Valid credentials found but TTS still in demo mode',
-            solution: 'Force redeploy Vercel or check TTS initialization logs',
-            priority: 'MEDIUM'
-        });
-    }
 
     return res.json(debug);
 }; 
