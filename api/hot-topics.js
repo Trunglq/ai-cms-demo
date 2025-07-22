@@ -156,6 +156,13 @@ async function generateGoogleTrendingTopics() {
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
   
+  // Generate realistic VN-Index level (1480-1520 range with fluctuation)
+  const baseVnIndex = 1495;
+  const fluctuation = Math.floor(Math.random() * 40) - 20; // ±20 points
+  const currentVnIndex = baseVnIndex + fluctuation;
+  const milestone = currentVnIndex >= 1500 ? '1500' : '1480';
+  const indexAction = currentVnIndex >= 1500 ? 'vượt mốc' : 'tiến sát';
+  
   return [
     {
       title: `Bitcoin phục hồi mạnh cuối năm ${currentYear}`,
@@ -165,10 +172,10 @@ async function generateGoogleTrendingTopics() {
       source: "Google Trends"
     },
     {
-      title: `VN-Index vượt mốc 1200 điểm tháng ${currentMonth}/${currentYear}`,
-      description: "Thị trường chứng khoán Việt Nam tích cực, nhóm cổ phiếu ngân hàng và bất động sản dẫn dắt thanh khoản",
-      category: "Chứng khoán",
-      score: 94,
+      title: `VN-Index ${indexAction} ${milestone} điểm - đạt ${currentVnIndex} điểm`,
+      description: `Thị trường chứng khoán Việt Nam bứt phá mạnh, VN-Index hiện ở mức ${currentVnIndex} điểm với thanh khoản khủng từ nhóm cổ phiếu ngân hàng, thép và bất động sản`,
+      category: "Chứng khoán", 
+      score: currentVnIndex >= 1500 ? 96 : 92,
       source: "Google Trends"
     },
     {
