@@ -145,6 +145,32 @@
             0% { background-position: 1rem 0; }
             100% { background-position: 0 0; }
         }
+        /* Force horizontal layout for statistics cards */
+        #hotTopicsStats .row {
+            display: flex !important;
+            flex-wrap: wrap;
+        }
+        #hotTopicsStats .col-6,
+        #hotTopicsStats .col-md-3 {
+            flex: 0 0 auto;
+            padding: 0.5rem;
+        }
+        @media (max-width: 767.98px) {
+            #hotTopicsStats .col-6 {
+                width: 50%;
+            }
+        }
+        @media (min-width: 768px) {
+            #hotTopicsStats .col-md-3 {
+                width: 25%;
+            }
+        }
+        /* Ensure card content is horizontal */
+        #hotTopicsStats .d-flex {
+            align-items: center !important;
+            justify-content: flex-start !important;
+            text-align: left !important;
+        }
     </style>
 </head>
 <body>
@@ -1896,7 +1922,15 @@
                 return;
             }
 
-            const topicsHTML = topics.map((topic, index) => `
+            // IMPORTANT: Update global filteredHotTopics to match displayed topics
+            window.filteredHotTopics = [...topics];
+
+            const topicsHTML = topics.map((topic, index) => {
+                // Escape quotes and special characters for onclick handlers
+                const escapedTitle = topic.title.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                const escapedDescription = topic.description.replace(/'/g, "\\'").replace(/"/g, '\\"');
+                
+                return `
                 <div class="col-lg-4 col-md-6 mb-4">
                     <div class="card h-100 hot-topic-card-main shadow-sm" data-bs-toggle="modal" data-bs-target="#topicDetailModal" onclick="showTopicDetail(${index})">
                         <div class="card-header bg-gradient text-white ${getScoreColor(topic.score)}">
@@ -1915,17 +1949,18 @@
                         </div>
                         <div class="card-footer bg-transparent">
                             <div class="d-flex justify-content-between">
-                                <button class="btn btn-sm btn-outline-primary flex-fill me-2" onclick="event.stopPropagation(); quickUseForWriting('${topic.title}', '${topic.description}')">
+                                <button class="btn btn-sm btn-outline-primary flex-fill me-2" onclick="event.stopPropagation(); quickUseForWriting('${escapedTitle}', '${escapedDescription}')">
                                     <i class="fas fa-edit me-1"></i>Viết bài
                                 </button>
-                                <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); quickCopyTopic('${topic.title}')">
+                                <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); quickCopyTopic('${escapedTitle}')">
                                     <i class="fas fa-copy"></i>
                                 </button>
                             </div>
                         </div>
                     </div>
                 </div>
-            `).join('');
+                `;
+            }).join('');
 
             grid.innerHTML = topicsHTML;
         }
@@ -1977,8 +2012,16 @@
 
         // Show topic detail in modal
         window.showTopicDetail = function(index) {
+            console.log('showTopicDetail called with index:', index);
+            console.log('filteredHotTopics length:', window.filteredHotTopics?.length);
+            
             const topic = window.filteredHotTopics[index];
-            if (!topic) return;
+            console.log('Selected topic:', topic);
+            
+            if (!topic) {
+                console.error('Topic not found at index:', index);
+                return;
+            }
 
             document.getElementById('modalTopicTitle').textContent = topic.title;
             document.getElementById('modalTopicDescription').textContent = topic.description;
@@ -1989,11 +2032,13 @@
 
             // Generate writing angles
             const angles = generateWritingAngles(topic);
+            console.log('Generated angles:', angles);
             const anglesList = document.getElementById('modalWritingAngles');
             anglesList.innerHTML = angles.map(angle => `<li class="mb-1"><i class="fas fa-chevron-right me-2 text-primary"></i>${angle}</li>`).join('');
 
             // Generate keywords
             const keywords = generateKeywords(topic);
+            console.log('Generated keywords:', keywords);
             const keywordsDiv = document.getElementById('modalKeywords');
             keywordsDiv.innerHTML = keywords.map(kw => `<span class="badge bg-light text-dark me-1 mb-1">${kw}</span>`).join('');
 
@@ -2045,31 +2090,81 @@
 
         // Generate keywords based on topic
         function generateKeywords(topic) {
-            const words = topic.title.split(' ').concat(topic.description.split(' '));
-            const stopwords = ['là', 'và', 'của', 'trong', 'với', 'được', 'có', 'để', 'từ', 'cho', 'về', 'theo', 'các', 'những', 'này', 'đó', 'một', 'sẽ', 'đã', 'không', 'tại', 'trên', 'sau', 'trước'];
+            if (!topic || !topic.title || !topic.description) {
+                console.error('Invalid topic data for keyword generation:', topic);
+                return ['Chủ đề', 'Hot', 'Trending'];
+            }
             
-            return words
-                .filter(word => word.length > 3 && !stopwords.includes(word.toLowerCase()))
-                .slice(0, 8)
+            const words = topic.title.split(' ').concat(topic.description.split(' '));
+            const stopwords = ['là', 'và', 'của', 'trong', 'với', 'được', 'có', 'để', 'từ', 'cho', 'về', 'theo', 'các', 'những', 'này', 'đó', 'một', 'sẽ', 'đã', 'không', 'tại', 'trên', 'sau', 'trước', 'như', 'thì', 'rồi', 'mà', 'nên', 'bởi', 'vì', 'nếu', 'khi', 'lúc'];
+            
+            const filteredWords = words
+                .map(word => word.replace(/[.,!?;:"()]/g, '').trim()) // Remove punctuation
+                .filter(word => 
+                    word.length > 2 && 
+                    !stopwords.includes(word.toLowerCase()) &&
+                    !/^\d+$/.test(word) // Exclude pure numbers
+                )
+                .slice(0, 10) // Get more words first
                 .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+            
+            // Remove duplicates and return top 8
+            const uniqueWords = [...new Set(filteredWords)];
+            return uniqueWords.slice(0, 8);
         }
 
         // Quick use topic for writing
         window.quickUseForWriting = function(title, description) {
+            console.log('quickUseForWriting called with:', { title, description });
+            
             // Switch to AI writing feature
-            document.querySelector('[data-feature="ai-write"]').click();
+            const aiWriteBtn = document.querySelector('[data-feature="ai-write"]');
+            if (!aiWriteBtn) {
+                console.error('AI write button not found');
+                alert('Không tìm thấy tính năng AI viết bài. Vui lòng thử lại.');
+                return;
+            }
+            
+            aiWriteBtn.click();
             
             // Wait for UI to load then fill data
             setTimeout(() => {
-                document.getElementById('fromHotTopics').checked = true;
-                document.getElementById('fromHotTopics').dispatchEvent(new Event('change'));
-                
-                setTimeout(() => {
-                    // Simulate topic selection
-                    document.getElementById('selectedTopicDetails').value = `${title}\n\n${description}`;
-                    document.getElementById('selectedTopicDetails').readOnly = false;
-                }, 500);
-            }, 300);
+                const hotTopicsRadio = document.getElementById('fromHotTopics');
+                if (hotTopicsRadio) {
+                    console.log('Setting hot topics radio to checked');
+                    hotTopicsRadio.checked = true;
+                    hotTopicsRadio.dispatchEvent(new Event('change'));
+                    
+                    setTimeout(() => {
+                        const selectedTopicDetails = document.getElementById('selectedTopicDetails');
+                        if (selectedTopicDetails) {
+                            console.log('Setting topic details:', title, description);
+                            selectedTopicDetails.value = `${title}\n\n${description}`;
+                            selectedTopicDetails.readOnly = false;
+                            
+                            // Also update the display
+                            const selectedTopicDisplay = document.getElementById('selectedTopicDisplay');
+                            const selectedTopicTitle = document.getElementById('selectedTopicTitle');
+                            const selectedTopicDescription = document.getElementById('selectedTopicDescription');
+                            
+                            if (selectedTopicDisplay && selectedTopicTitle && selectedTopicDescription) {
+                                selectedTopicTitle.textContent = title;
+                                selectedTopicDescription.textContent = description;
+                                selectedTopicDisplay.style.display = 'block';
+                            }
+                            
+                            // Show success message
+                            alert('✅ Đã chuyển chủ đề sang AI viết bài!');
+                        } else {
+                            console.error('selectedTopicDetails not found');
+                            alert('Không thể tự động điền thông tin. Vui lòng copy thủ công.');
+                        }
+                    }, 800);
+                } else {
+                    console.error('fromHotTopics radio not found');
+                    alert('Không thể chuyển đổi sang chế độ Hot Topics. Vui lòng chọn thủ công.');
+                }
+            }, 500);
         };
 
         // Quick copy topic
