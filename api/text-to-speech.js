@@ -5,6 +5,10 @@ const path = require('path');
 // Initialize Google Cloud TTS client
 let ttsClient;
 
+console.log('🚀 TTS API Initializing...');
+console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
+console.log('📊 All env vars with GOOGLE:', Object.keys(process.env).filter(k => k.includes('GOOGLE')));
+
 try {
     // For production: Use service account key from environment variable
     if (process.env.GOOGLE_CLOUD_KEY_JSON) {
