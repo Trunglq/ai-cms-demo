@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
     return res.json({ 
       success: true, 
       message: 'Enhanced Content Summary API is working',
-      version: '2.3-LawFixed',
+      version: '2.4-FullDisplay',
       supportedSites: ['VnEconomy', 'DanTri', 'VietnamNet', 'VnExpress', 'TuoiTre', 'ThanhNien', 'Zing', '24h'],
       lastUpdated: new Date().toLocaleString('vi-VN', {timeZone: 'Asia/Ho_Chi_Minh'}),
       debug: req.query.debug === 'true' ? { 
@@ -442,32 +442,36 @@ async function generateNewsSummary(headlines, settings) {
       'general': 'Tổng hợp'
     };
     
-    const prompt = `Bạn là một biên tập viên tin tức chuyên nghiệp của báo Việt Nam với 10 năm kinh nghiệm. Hãy tạo một bản điểm tin chất lượng cao từ các tiêu đề tin tức sau:
+         const headlinesCount = headlines.length;
+     const prompt = `Bạn là một biên tập viên tin tức chuyên nghiệp của báo Việt Nam với 10 năm kinh nghiệm. Hãy tạo một bản điểm tin chất lượng cao từ TẤT CẢ ${headlinesCount} tiêu đề tin tức sau:
 
-TIÊU ĐỀ TIN TỨC HÔM NAY:
+TIÊU ĐỀ TIN TỨC HÔM NAY (${headlinesCount} tin):
 • ${headlineTexts}
 
 YÊU CẦU CHUYÊN MÔN:
 - Tạo điểm tin theo chuẩn báo chí Việt Nam
+- HIỂN THỊ TẤT CẢ ${headlinesCount} tin, không được bỏ sót tin nào
 - Nhóm các tin tức liên quan theo chủ đề
 - Sử dụng ngôn ngữ trang trọng, chuyên nghiệp và dễ hiểu
-- Độ dài: ${settings?.length === 'short' ? '4-5 câu tóm gọn' : settings?.length === 'long' ? '10-12 câu chi tiết' : '6-8 câu vừa phải'}
+- Độ dài: ${settings?.length === 'short' ? 'Ngắn gọn' : settings?.length === 'long' ? 'Chi tiết đầy đủ' : 'Vừa phải'}
 - Tập trung: ${focusMap[settings?.focus] || 'Tổng hợp các lĩnh vực'}
 - Đưa ra nhận định ngắn về xu hướng tổng thể
 
-ĐỊNH DẠNG XUẤT BẢN:
+ĐỊNH DẠNG XUẤT BẢN - HIỂN THỊ ĐẦY ĐỦ ${headlinesCount} TIN:
 📰 ĐIỂM TIN NHANH
 
 🔥 NỔI BẬT TRONG NGÀY:
 • [2-3 tin quan trọng nhất]
 
-📊 ${focusMap[settings?.focus] || 'CÁC LĨNH VỰC KHÁC'}:
-• [Những tin liên quan đến focus area]
+📊 ${focusMap[settings?.focus] || 'CÁC TIN QUAN TRỌNG'}:
+• [4-6 tin liên quan đến focus area]
 
 🏛️ TIN TỨC KHÁC:
-• [Các tin còn lại, được tóm gọn]
+• [Tất cả các tin còn lại - KHÔNG ĐƯỢC BỎ SÓT]
 
-📝 NHẬN ĐỊNH: [Phân tích ngắn gọn về xu hướng chung và tác động]`;
+📝 NHẬN ĐỊNH: [Phân tích ngắn gọn về xu hướng chung từ ${headlinesCount} tin tức]
+
+⚠️ QUAN TRỌNG: Phải hiển thị tất cả ${headlinesCount} tin trong bản điểm tin, không được bỏ sót bất kỳ tin nào!`;
 
     const completion = await openai.chat.completions.create({
       model: 'gpt-4o',
@@ -488,16 +492,24 @@ YÊU CẦU CHUYÊN MÔN:
                                             h.title.includes('pháp luật') || h.title.includes('công an') || h.title.includes('bắt') || h.title.includes('lừa đảo') ? 'Pháp luật' :
                                             h.title.includes('thị trường') || h.title.includes('xuất khẩu') ? 'Thị trường' : 'Tổng hợp'))];
 
-    return `📰 ĐIỂM TIN NHANH (${headlines.length} tin)
+         // Ensure we display all headlines in fallback
+     const allHeadlinesToShow = headlines.slice(0, Math.min(headlines.length, 20)); // Cap at 20 for readability
+     const featured = allHeadlinesToShow.slice(0, 2);
+     const important = allHeadlinesToShow.slice(2, 8);
+     const others = allHeadlinesToShow.slice(8);
+
+     return `📰 ĐIỂM TIN NHANH (${headlines.length} tin)
 
 🔥 NỔI BẬT TRONG NGÀY:
-• ${topHeadlines[0].title}
-• ${topHeadlines[1].title}
+${featured.map(h => `• ${h.title}`).join('\n')}
 
-📊 CÁC TIN QUAN TRỌNG KHÁC:
-${topHeadlines.slice(2).map(h => `• ${h.title}`).join('\n')}
+📊 CÁC TIN QUAN TRỌNG:
+${important.map(h => `• ${h.title}`).join('\n')}
 
-📝 NHẬN ĐỊNH: Hôm nay có ${headlines.length} tin tức quan trọng được cập nhật từ nguồn báo chí uy tín, phản ánh các diễn biến đáng chú ý trong các lĩnh vực ${categories.join(', ')}.
+${others.length > 0 ? `🏛️ TIN TỨC KHÁC:
+${others.map(h => `• ${h.title}`).join('\n')}
+
+` : ''}📝 NHẬN ĐỊNH: Hôm nay có ${headlines.length} tin tức quan trọng được cập nhật từ nguồn báo chí uy tín, phản ánh các diễn biến đáng chú ý trong các lĩnh vực ${categories.join(', ')}.
 
 ⏰ *Cập nhật lúc: ${new Date().toLocaleString('vi-VN', {timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric'})}*`;
   }
