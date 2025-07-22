@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test TTS Live - Debug</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .debug-box { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 20px 0; }
+        .test-btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 10px 5px; }
+        .test-btn:hover { background: #0056b3; }
+        .result { background: white; border: 1px solid #ddd; padding: 15px; margin-top: 10px; max-height: 400px; overflow-y: auto; }
+        pre { white-space: pre-wrap; font-size: 12px; }
+        .status-good { color: green; font-weight: bold; }
+        .status-bad { color: red; font-weight: bold; }
+        .loading { color: orange; }
+    </style>
+</head>
+<body>
+    <h1>🔍 TTS Debug Test - Production Live</h1>
+    
+    <div class="debug-box">
+        <h3>Production URL: <span id="prodUrl"></span></h3>
+        <p>Kiểm tra TTS production để xem tại sao vẫn tạo ra audio demo thay vì audio thật.</p>
+    </div>
+
+    <div class="debug-box">
+        <h3>🧪 Test Cases</h3>
+        
+        <button class="test-btn" onclick="testDebugEndpoint()">1. Test Debug Endpoint</button>
+        <button class="test-btn" onclick="testTTSHealth()">2. Test TTS Health Check</button>
+        <button class="test-btn" onclick="testRealTTS()">3. Test Real TTS Call</button>
+        <button class="test-btn" onclick="testAllInOne()">4. Run All Tests</button>
+        
+        <div class="result" id="results">
+            <em>Click một test button để bắt đầu...</em>
+        </div>
+    </div>
+
+    <div class="debug-box">
+        <h3>💡 Expected Results</h3>
+        <ul>
+            <li><strong>Demo Mode:</strong> TTS response sẽ có <code>"demoMode": true</code></li>
+            <li><strong>Real Mode:</strong> TTS response sẽ có <code>"mode": "Production Mode"</code></li>
+            <li><strong>Issue:</strong> Nếu response có <code>"note": "This is demo audio"</code> → credentials problem</li>
+        </ul>
+    </div>
+
+    <script>
+        const PROD_URL = 'https://ai-cms-demo-hnsiunox9-basubos.vercel.app';
+        document.getElementById('prodUrl').textContent = PROD_URL;
+        
+        function log(message, isError = false, isSuccess = false) {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = isError ? 'status-bad' : (isSuccess ? 'status-good' : '');
+            const content = `[${timestamp}] ${message}\n`;
+            
+            if (results.textContent.includes('Click một test')) {
+                results.innerHTML = `<pre class="${className}">${content}</pre>`;
+            } else {
+                results.innerHTML += `<pre class="${className}">${content}</pre>`;
+            }
+            results.scrollTop = results.scrollHeight;
+        }
+
+        async function testDebugEndpoint() {
+            log('🔍 Testing Debug Endpoint...', false, false);
+            log('URL: ' + PROD_URL + '/api/debug-tts');
+            
+            try {
+                const response = await fetch(PROD_URL + '/api/debug-tts', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                log('Response Status: ' + response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ DEBUG ENDPOINT SUCCESS!', false, true);
+                    log('Debug Results:', false, false);
+                    log(JSON.stringify(data, null, 2));
+                    
+                    // Analyze results
+                    if (data.summary) {
+                        log('\n📊 ANALYSIS:', false, false);
+                        log(`Overall Status: ${data.summary.overallStatus}`, data.summary.overallStatus === 'WORKING', data.summary.overallStatus !== 'WORKING');
+                        log(`Tests: ${data.summary.passed}✅ ${data.summary.failed}❌ ${data.summary.skipped}⏭️`);
+                        
+                        if (data.summary.recommendation) {
+                            log('\n💡 RECOMMENDATION:', false, false);
+                            log(`Issue: ${data.summary.recommendation.issue}`, data.summary.recommendation.priority === 'HIGH');
+                            log(`Solution: ${data.summary.recommendation.solution}`);
+                        }
+                    }
+                } else {
+                    log('❌ Debug endpoint failed: ' + response.status + ' ' + response.statusText, true);
+                    if (response.status === 401) {
+                        log('🔐 Authentication required - try accessing via browser first', true);
+                    }
+                }
+            } catch (error) {
+                log('❌ Debug endpoint error: ' + error.message, true);
+            }
+        }
+
+        async function testTTSHealth() {
+            log('\n🩺 Testing TTS Health Check...', false, false);
+            
+            try {
+                const response = await fetch(PROD_URL + '/api/text-to-speech', {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ TTS Health Check SUCCESS!', false, true);
+                    log(`Mode: ${data.mode}`);
+                    
+                    if (data.mode && data.mode.includes('Demo')) {
+                        log('⚠️ DEMO MODE DETECTED - This is the issue!', true);
+                        log('TTS is running in fallback/demo mode');
+                    } else if (data.mode && data.mode.includes('Production')) {
+                        log('🎉 PRODUCTION MODE ACTIVE!', false, true);
+                    }
+                    
+                    log('Full Health Response:');
+                    log(JSON.stringify(data, null, 2));
+                } else {
+                    log('❌ TTS Health check failed: ' + response.status, true);
+                }
+            } catch (error) {
+                log('❌ TTS Health error: ' + error.message, true);
+            }
+        }
+
+        async function testRealTTS() {
+            log('\n🎤 Testing Real TTS Call...', false, false);
+            
+            try {
+                const response = await fetch(PROD_URL + '/api/text-to-speech', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text: 'Đây là test Google Cloud TTS thật',
+                        language: 'vi-VN',
+                        voice: 'vi-VN-Standard-A',
+                        speed: 1.0
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    log('✅ TTS Call SUCCESS!', false, true);
+                    
+                    // Check if demo mode
+                    if (data.demoMode === true) {
+                        log('❌ DEMO MODE CONFIRMED - Audio is fake!', true);
+                        log('This explains why you get demo audio instead of real speech');
+                    } else if (data.audioUrl && data.audioUrl.startsWith('data:audio')) {
+                        log('🎉 REAL AUDIO MODE - Google Cloud TTS working!', false, true);
+                        log(`Quality: ${data.quality}`);
+                        log(`Voice Used: ${data.voiceUsed}`);
+                        log(`Size: ${data.size}`);
+                    }
+                    
+                    if (data.note && data.note.includes('demo')) {
+                        log('⚠️ Demo note found: ' + data.note, true);
+                    }
+                    
+                    log('TTS Response:');
+                    log(JSON.stringify({...data, audioUrl: data.audioUrl ? '[Audio Data Hidden]' : 'None'}, null, 2));
+                } else {
+                    log('❌ TTS call failed: ' + response.status, true);
+                }
+            } catch (error) {
+                log('❌ TTS call error: ' + error.message, true);
+            }
+        }
+
+        async function testAllInOne() {
+            log('🚀 Running all tests sequentially...\n');
+            
+            await testTTSHealth();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testRealTTS();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            await testDebugEndpoint();
+            
+            log('\n🎯 ALL TESTS COMPLETED!', false, true);
+            log('\nLook for key indicators:', false, false);
+            log('- "demoMode": true = Problem found', false, false);
+            log('- "mode": "Demo/Fallback Mode" = Problem found', false, false);
+            log('- "mode": "Production Mode" = Should be working', false, false);
+        }
+    </script>
+</body>
+</html> 
