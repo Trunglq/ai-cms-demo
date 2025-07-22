@@ -234,37 +234,49 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
           '.article-title a',
         ];
       } else if (currentUrl.includes('vneconomy.vn')) {
-        // VnEconomy specific selectors
+        // VnEconomy specific selectors (updated based on actual page structure)
         selectors = [
-          'h3 a[href*="vneconomy"]',
-          'h2 a[href*="vneconomy"]',
-          '.story-title a[href]',
-          '.article-title a[href]',
-          '.news-item a[href]',
-          '.post-title a',
-          'article h3 a',
-          'article h2 a',
-          '.story-item a',
-          '.news-list-item a',
-          'div[class*="story"] a[href]',
-          'div[class*="article"] a[href]',
+          'h3 a[href*=".htm"]',           // Article titles in h3 tags
+          'h2 a[href*=".htm"]',           // Article titles in h2 tags  
+          'h4 a[href*=".htm"]',           // Some article titles in h4 tags
+          'a[href*="vneconomy.vn"][href*=".htm"]',  // All VnEconomy article links
+          '.story-title a',                // Story title links
+          '.article-title a',             // Article title links
+          '.news-title a',                // News title links  
+          '.post-title a',                // Post title links
+          'div a[href*=".htm"]',          // Generic article links in divs
+          'li a[href*=".htm"]',           // Article links in list items
+          'p a[href*=".htm"]',            // Article links in paragraphs
+          'span a[href*=".htm"]',         // Article links in spans
+          'td a[href*=".htm"]',           // Article links in table cells
+          '[class*="title"] a[href*=".htm"]', // Any element with "title" class
+          '[class*="news"] a[href*=".htm"]',  // Any element with "news" class
+          '[class*="article"] a[href*=".htm"]', // Any element with "article" class
         ];
-      } else {
-        // Generic fallback selectors
-        selectors = [
-          'article a[href*="/"]',
-          '.story a[href*="/"]',
-          '.story-item a[href*="/"]',
-          '.article-item a[href*="/"]',
-          '.news-item a[href*="/"]',
-          '.story-title a',
-          '.title-news a',
-          'h3 a[href*="/"]',
-          'h2 a[href*="/"]',
-          '.item-news a',
-          '.story a',
-        ];
-      }
+              } else {
+          // Generic fallback selectors (enhanced)
+          selectors = [
+            'h1 a[href*=".htm"]',           // Main headlines
+            'h2 a[href*=".htm"]',           // Secondary headlines  
+            'h3 a[href*=".htm"]',           // Tertiary headlines
+            'h4 a[href*=".htm"]',           // Minor headlines
+            'article a[href*="/"]',         // Article container links
+            '.story a[href*="/"]',          // Story links
+            '.story-item a[href*="/"]',     // Story item links
+            '.article-item a[href*="/"]',   // Article item links
+            '.news-item a[href*="/"]',      // News item links
+            '.story-title a',              // Story title links
+            '.title-news a',               // Title news links
+            '.news-title a',               // News title links
+            '.post-title a',               // Post title links
+            '.item-news a',                // Item news links
+            'a[href*=".htm"]',             // Any .htm links
+            'a[href*="/20"]',              // Links with dates (common pattern)
+            '[class*="title"] a',          // Any title class links
+            '[class*="news"] a',           // Any news class links
+            '[class*="article"] a',        // Any article class links
+          ];
+        }
 
       console.log(`🔍 DEBUG: Will try ${selectors.length} selectors:`, selectors);
       
