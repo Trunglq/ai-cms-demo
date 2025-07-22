@@ -8,6 +8,7 @@ let ttsClient;
 try {
     // For production: Use service account key from environment variable
     if (process.env.GOOGLE_CLOUD_KEY_JSON) {
+        console.log('🔑 Found GOOGLE_CLOUD_KEY_JSON environment variable');
         const credentials = JSON.parse(process.env.GOOGLE_CLOUD_KEY_JSON);
         ttsClient = new textToSpeech.TextToSpeechClient({
             projectId: credentials.project_id,
@@ -15,12 +16,13 @@ try {
         });
         console.log('✅ Google Cloud TTS initialized with service account');
     } else {
-        // For local development: Use default credentials or key file
-        ttsClient = new textToSpeech.TextToSpeechClient();
-        console.log('⚠️ Google Cloud TTS initialized with default credentials');
+        console.log('⚠️ GOOGLE_CLOUD_KEY_JSON not found, will use demo mode');
+        ttsClient = null; // Force demo mode
     }
 } catch (error) {
     console.error('❌ Failed to initialize Google Cloud TTS:', error.message);
+    console.log('🎭 Falling back to demo mode due to initialization error');
+    ttsClient = null; // Force demo mode on any error
 }
 
 // Audio cache for temporary files (in-memory for serverless)
