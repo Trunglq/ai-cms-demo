@@ -34,7 +34,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    console.log(`🚀 Content Summary API v2: ${mode} mode for ${url}`);
+    console.log(`🚀 Content Summary API v4-FINAL: ${mode} mode for ${url}`);
 
     let summary;
     if (mode === 'category') {
