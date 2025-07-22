@@ -31,9 +31,26 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('Content Summary Error:', error);
-    res.status(500).json({ 
-      error: 'Failed to summarize content', 
-      details: error.message 
+    
+    // Enhanced error messaging based on error type
+    let userMessage = 'Failed to summarize content';
+    let statusCode = 500;
+    
+    if (error.message.includes('Không tìm thấy bài báo nào')) {
+      userMessage = error.message; // Use the detailed message we crafted
+      statusCode = 404;
+    } else if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
+      userMessage = 'Timeout: Trang web phản hồi chậm. Hãy thử lại với URL khác hoặc chờ vài phút.';
+      statusCode = 408;
+    } else if (error.message.includes('navigation') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
+      userMessage = 'Lỗi truy cập: URL không tồn tại hoặc trang web chặn truy cập. Kiểm tra lại URL.';
+      statusCode = 400;
+    }
+    
+    res.status(statusCode).json({ 
+      error: userMessage, 
+      details: error.message,
+      url: req.body.url || 'unknown'
     });
   }
 }
@@ -142,6 +159,12 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
     if (hasBlockingElements) {
       console.warn('Possible blocking mechanism detected on page');
     }
+    
+    // For VnEconomy, wait a bit longer for dynamic content
+    if (categoryUrl.includes('vneconomy.vn')) {
+      console.log('VnEconomy detected, waiting for dynamic content...');
+      await page.waitForTimeout(2000); // Additional wait
+    }
 
     // Extract article links and info based on common news sites
     const articles = await page.evaluate((maxArticles, currentUrl) => {
@@ -198,6 +221,22 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
           'h3 a[href*="tuoitre"]',
           'h2 a[href*="tuoitre"]',
           '.article-title a',
+        ];
+      } else if (currentUrl.includes('vneconomy.vn')) {
+        // VnEconomy specific selectors
+        selectors = [
+          'h3 a[href*="vneconomy"]',
+          'h2 a[href*="vneconomy"]',
+          '.story-title a[href]',
+          '.article-title a[href]',
+          '.news-item a[href]',
+          '.post-title a',
+          'article h3 a',
+          'article h2 a',
+          '.story-item a',
+          '.news-list-item a',
+          'div[class*="story"] a[href]',
+          'div[class*="article"] a[href]',
         ];
       } else {
         // Generic fallback selectors
@@ -322,6 +361,20 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
       console.log('Sample articles found:', articles.slice(0, 3).map(a => a.title));
     } else {
       console.warn('No articles found! This might indicate selector issues.');
+      
+      // Special debugging for VnEconomy
+      if (categoryUrl.includes('vneconomy.vn')) {
+        console.warn('VnEconomy specific debugging: checking page structure...');
+        const pageInfo = await page.evaluate(() => {
+          return {
+            title: document.title,
+            linkCount: document.querySelectorAll('a').length,
+            headingCount: document.querySelectorAll('h1, h2, h3, h4').length,
+            hasMainContent: !!document.querySelector('main, .main, #main, .content, #content')
+          };
+        });
+        console.log('VnEconomy page info:', pageInfo);
+      }
     }
     
     return articles;
