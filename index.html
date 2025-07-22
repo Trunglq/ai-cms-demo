@@ -3332,7 +3332,17 @@
                         Đã test multiple voices và configurations.</small>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                     `;
-                    document.querySelector('#tts .card-body').appendChild(debugAlert);
+                    
+                    // Find TTS container safely
+                    const ttsContainer = document.querySelector('.card-body') || 
+                                       document.querySelector('main .container') || 
+                                       document.body;
+                    
+                    if (ttsContainer) {
+                        ttsContainer.appendChild(debugAlert);
+                    } else {
+                        console.log('🔍 Debug results: Check console for details');
+                    }
                     
                     setTimeout(() => debugAlert.remove(), 10000);
                     

@@ -158,14 +158,24 @@ function generateDemoAudio(text, language, voice, speed) {
     buffer.write('data', offset); offset += 4;
     buffer.writeUInt32LE(samples * 2, offset); offset += 4;
     
-    // Generate simple tone based on language/voice (different frequencies)
+    // Generate simple tone based on language/voice (different frequencies) 
     const baseFreq = getLanguageFrequency(language);
     const voiceFreq = getVoiceFrequency(voice);
     const frequency = baseFreq + voiceFreq;
     
+    // Generate more audible demo sound with modulation
     for (let i = 0; i < samples; i++) {
-        const sample = Math.sin(2 * Math.PI * frequency * i / sampleRate) * 0.1; // Very quiet
-        buffer.writeInt16LE(sample * 32767, offset + i * 2);
+        const t = i / sampleRate;
+        // Create a more complex waveform that sounds more like speech
+        const fundamental = Math.sin(2 * Math.PI * frequency * t) * 0.3;
+        const harmonic1 = Math.sin(2 * Math.PI * frequency * 2 * t) * 0.1; 
+        const harmonic2 = Math.sin(2 * Math.PI * frequency * 3 * t) * 0.05;
+        
+        // Add amplitude modulation to simulate speech patterns
+        const modulation = 1 + 0.5 * Math.sin(2 * Math.PI * 3 * t); // 3Hz modulation
+        
+        const sample = (fundamental + harmonic1 + harmonic2) * modulation * 0.4; // Much louder
+        buffer.writeInt16LE(Math.max(-32767, Math.min(32767, sample * 32767)), offset + i * 2);
     }
     
     // Convert to base64 data URL

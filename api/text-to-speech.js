@@ -9,18 +9,29 @@ try {
     // For production: Use service account key from environment variable
     if (process.env.GOOGLE_CLOUD_KEY_JSON) {
         console.log('🔑 Found GOOGLE_CLOUD_KEY_JSON environment variable');
+        console.log('📊 Environment variable length:', process.env.GOOGLE_CLOUD_KEY_JSON.length);
+        console.log('📊 Environment variable preview:', process.env.GOOGLE_CLOUD_KEY_JSON.substring(0, 100) + '...');
+        
         const credentials = JSON.parse(process.env.GOOGLE_CLOUD_KEY_JSON);
+        console.log('🔧 Parsed credentials project_id:', credentials.project_id);
+        console.log('🔧 Parsed credentials client_email:', credentials.client_email);
+        
         ttsClient = new textToSpeech.TextToSpeechClient({
             projectId: credentials.project_id,
             credentials: credentials
         });
+        
         console.log('✅ Google Cloud TTS initialized with service account');
+        console.log('🌟 Real TTS mode active - should generate actual speech');
     } else {
-        console.log('⚠️ GOOGLE_CLOUD_KEY_JSON not found, will use demo mode');
+        console.log('⚠️ GOOGLE_CLOUD_KEY_JSON not found in environment variables');
+        console.log('📊 Available environment variables:', Object.keys(process.env).filter(key => key.includes('GOOGLE')));
+        console.log('🎭 Falling back to demo mode');
         ttsClient = null; // Force demo mode
     }
 } catch (error) {
     console.error('❌ Failed to initialize Google Cloud TTS:', error.message);
+    console.error('❌ Full error:', error);
     console.log('🎭 Falling back to demo mode due to initialization error');
     ttsClient = null; // Force demo mode on any error
 }
