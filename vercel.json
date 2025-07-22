@@ -5,6 +5,9 @@
     },
     "api/content-summary-simple.js": {
       "maxDuration": 30
+    },
+    "api/debug-tts.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
@@ -13,8 +16,12 @@
       "destination": "/api/content-summary.js"
     },
     {
-      "source": "/api/content-summary-simple",
+      "source": "/api/content-summary-simple", 
       "destination": "/api/content-summary-simple.js"
+    },
+    {
+      "source": "/api/debug-tts",
+      "destination": "/api/debug-tts.js"
     }
   ]
 } 

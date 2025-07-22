@@ -158,3 +158,56 @@ curl http://localhost:3000/api/text-to-speech
 - **Languages:** Support 5 languages with 24+ voice options
 
 **🎉 Happy Text-to-Speech! 🎤** 
+
+## 🎯 **Cách Debug TTS Production**
+
+### **Bước 1: Deploy Test Page**
+```bash
+git add .
+git commit -m "Add TTS debug test page"
+git push origin main
+```
+
+### **Bước 2: Chạy Debug Test**
+Sau khi Vercel deploy (~2-3 phút), truy cập:
+```
+https://ai-cms-demo-hnsiunox9-basubos.vercel.app/test-tts-live.html
+```
+
+### **Bước 3: Chạy Tests**
+1. Click **"4. Run All Tests"** để chạy tất cả
+2. Hoặc chạy từng test riêng lẻ
+
+### **Bước 4: Phân Tích Kết Quả**
+
+**🔍 Key Indicators để tìm:**
+
+| Indicator | Meaning | Action |
+|-----------|---------|--------|
+| `"mode": "Demo/Fallback Mode"` | ❌ **Demo mode** | Credentials missing/invalid |
+| `"mode": "Production Mode"` | ✅ **Real mode** | Should work |
+| `"demoMode": true` | ❌ **Fake audio** | This is your issue! |
+| `"note": "This is demo audio"` | ❌ **Fallback active** | Google Cloud not connected |
+
+## 🔧 **Common Fixes Based on Results**
+
+**❌ Nếu thấy Demo Mode:**
+1. **Check Vercel Environment Variables:**
+   - Vào Vercel Dashboard → Settings → Environment Variables
+   - Xem có `GOOGLE_CLOUD_KEY_JSON` không?
+
+**❌ Nếu JSON Parse Error:**
+```bash
+# Fix: Convert JSON to single line
+cat service-account-key.json | jq -c . | base64
+```
+
+**❌ Nếu TTS Client Error:**
+- Google Cloud project chưa enable TTS API
+- Service Account thiếu permission `Cloud Text-to-Speech User`
+
+---
+
+**🎯 Hãy chạy test và share kết quả với tôi!** 
+
+Tôi sẽ giúp phân tích chính xác issue và đưa ra solution cụ thể để có audio thật thay vì demo. 📊
