@@ -5,41 +5,100 @@ const path = require('path');
 // Initialize Google Cloud TTS client
 let ttsClient;
 
-console.log('🚀 TTS API Initializing... v2');
+console.log('🚀 TTS API Initializing... v3-ENHANCED');
 console.log('🌍 NODE_ENV:', process.env.NODE_ENV);
 console.log('📊 All env vars with GOOGLE:', Object.keys(process.env).filter(k => k.includes('GOOGLE')));
-console.log('🔍 GOOGLE_CLOUD_KEY_JSON exists:', !!process.env.GOOGLE_CLOUD_KEY_JSON);
-console.log('🔍 GOOGLE_CLOUD_KEY_JSON length:', process.env.GOOGLE_CLOUD_KEY_JSON ? process.env.GOOGLE_CLOUD_KEY_JSON.length : 'N/A');
+
+// Enhanced credential loading function
+function loadGoogleCredentials() {
+    const possibleKeys = [
+        'GOOGLE_CLOUD_KEY_JSON',
+        'GOOGLE_CLOUD_KEY_BASE64', 
+        'GOOGLE_CLOUD_CREDENTIALS',
+        'GOOGLE_APPLICATION_CREDENTIALS',
+        'GCP_SERVICE_ACCOUNT_KEY'
+    ];
+
+    for (const keyName of possibleKeys) {
+        const value = process.env[keyName];
+        if (!value) continue;
+
+        console.log(`🔍 Trying ${keyName}, length:`, value.length);
+        console.log(`📊 Preview:`, value.substring(0, 100) + '...');
+
+        try {
+            let credentials;
+            
+            // Handle Base64 encoded credentials
+            if (keyName.includes('BASE64')) {
+                console.log('🔓 Decoding Base64 credentials...');
+                const decoded = Buffer.from(value, 'base64').toString('utf8');
+                credentials = JSON.parse(decoded);
+                console.log('✅ Base64 decode successful');
+            } 
+            // Handle direct JSON
+            else {
+                console.log('📝 Parsing direct JSON credentials...');
+                credentials = JSON.parse(value);
+                console.log('✅ Direct JSON parse successful');
+            }
+            
+            // Validate required fields
+            const requiredFields = ['type', 'project_id', 'private_key', 'client_email'];
+            const missingFields = requiredFields.filter(field => !credentials[field]);
+            
+            if (missingFields.length > 0) {
+                console.log('❌ Missing required fields:', missingFields);
+                continue;
+            }
+            
+            console.log('🔧 Valid credentials found:');
+            console.log('  Project ID:', credentials.project_id);
+            console.log('  Client Email:', credentials.client_email);
+            console.log('  Type:', credentials.type);
+            
+            return credentials;
+            
+        } catch (error) {
+            console.log(`❌ Failed to parse ${keyName}:`, error.message);
+            
+            // For JSON parse errors, show more details
+            if (error instanceof SyntaxError) {
+                console.log(`📊 ${keyName} length:`, value.length);
+                console.log(`📊 Error position:`, error.message);
+                console.log(`📊 Content around error:`, value.substring(Math.max(0, value.length - 100)));
+            }
+            continue;
+        }
+    }
+    
+    return null;
+}
 
 try {
-    // For production: Use service account key from environment variable
-    if (process.env.GOOGLE_CLOUD_KEY_JSON) {
-        console.log('🔑 Found GOOGLE_CLOUD_KEY_JSON environment variable');
-        console.log('📊 Environment variable length:', process.env.GOOGLE_CLOUD_KEY_JSON.length);
-        console.log('📊 Environment variable preview:', process.env.GOOGLE_CLOUD_KEY_JSON.substring(0, 100) + '...');
-        
-        const credentials = JSON.parse(process.env.GOOGLE_CLOUD_KEY_JSON);
-        console.log('🔧 Parsed credentials project_id:', credentials.project_id);
-        console.log('🔧 Parsed credentials client_email:', credentials.client_email);
+    const credentials = loadGoogleCredentials();
+    
+    if (credentials) {
+        console.log('🔑 Initializing Google Cloud TTS with valid credentials...');
         
         ttsClient = new textToSpeech.TextToSpeechClient({
             projectId: credentials.project_id,
             credentials: credentials
         });
         
-        console.log('✅ Google Cloud TTS initialized with service account');
-        console.log('🌟 Real TTS mode active - should generate actual speech');
+        console.log('✅ Google Cloud TTS initialized successfully');
+        console.log('🌟 PRODUCTION MODE - Real TTS active');
     } else {
-        console.log('⚠️ GOOGLE_CLOUD_KEY_JSON not found in environment variables');
-        console.log('📊 Available environment variables:', Object.keys(process.env).filter(key => key.includes('GOOGLE')));
+        console.log('⚠️ No valid Google Cloud credentials found');
+        console.log('📊 Checked keys:', ['GOOGLE_CLOUD_KEY_JSON', 'GOOGLE_CLOUD_KEY_BASE64', 'GOOGLE_CLOUD_CREDENTIALS']);
         console.log('🎭 Falling back to demo mode');
-        ttsClient = null; // Force demo mode
+        ttsClient = null;
     }
 } catch (error) {
     console.error('❌ Failed to initialize Google Cloud TTS:', error.message);
     console.error('❌ Full error:', error);
     console.log('🎭 Falling back to demo mode due to initialization error');
-    ttsClient = null; // Force demo mode on any error
+    ttsClient = null;
 }
 
 // Audio cache for temporary files (in-memory for serverless)
