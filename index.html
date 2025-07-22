@@ -1309,10 +1309,37 @@
             // Input method switching
             document.querySelectorAll('input[name="inputMethod"]').forEach(radio => {
                 radio.addEventListener('change', function() {
+                    console.log('Input method changed to:', this.value);
+                    
+                    // Hide all sections first
                     document.querySelectorAll('.input-section').forEach(section => {
                         section.style.display = 'none';
                     });
                     
+                    // Clear previous state when switching away from hot topics
+                    if (this.value !== 'hottopics') {
+                        window.selectedHotTopicData = null;
+                        console.log('Cleared hot topic data due to input method change');
+                        
+                        // Clear hot topics UI state
+                        const selectedTopicDisplay = document.getElementById('selectedTopicDisplay');
+                        if (selectedTopicDisplay) {
+                            selectedTopicDisplay.style.display = 'none';
+                        }
+                        
+                        const selectedTopicDetails = document.getElementById('selectedTopicDetails');
+                        if (selectedTopicDetails) {
+                            selectedTopicDetails.value = '';
+                            selectedTopicDetails.readOnly = true;
+                        }
+                        
+                        // Remove selections
+                        document.querySelectorAll('.hot-topic-card').forEach(c => {
+                            c.classList.remove('selected', 'border-primary');
+                        });
+                    }
+                    
+                    // Show appropriate section
                     if (this.value === 'topic') {
                         document.getElementById('topicInput').style.display = 'block';
                     } else if (this.value === 'hottopics') {
@@ -1396,16 +1423,31 @@
                             return;
                         }
                     } else if (inputMethod === 'hottopics') {
-                        const selectedTopic = document.querySelector('.hot-topic-card.selected');
-                        if (!selectedTopic) {
-                            alert('Vui lòng chọn một chủ đề Hot từ danh sách!');
-                            return;
+                        // Check if we have stored hot topic data (more reliable than DOM query)
+                        if (window.selectedHotTopicData) {
+                            inputContent = window.selectedHotTopicData.title;
+                            const topicDescription = window.selectedHotTopicData.description;
+                            const additionalContext = document.getElementById('selectedTopicDetails').value.trim();
+                            inputContext = `${topicDescription}${additionalContext ? '\nGóc độ bổ sung: ' + additionalContext : ''}`;
+                            console.log('Using stored hot topic data:', {
+                                title: inputContent,
+                                description: topicDescription,
+                                context: additionalContext,
+                                timestamp: window.selectedHotTopicData.timestamp
+                            });
+                        } else {
+                            // Fallback to DOM query if no stored data
+                            const selectedTopic = document.querySelector('.hot-topic-card.selected');
+                            if (!selectedTopic) {
+                                alert('Vui lòng chọn một chủ đề Hot từ danh sách!');
+                                return;
+                            }
+                            inputContent = selectedTopic.dataset.title;
+                            const topicDescription = selectedTopic.dataset.description;
+                            const additionalContext = document.getElementById('selectedTopicDetails').value.trim();
+                            inputContext = `${topicDescription}${additionalContext ? '\nGóc độ bổ sung: ' + additionalContext : ''}`;
+                            console.log('Using DOM fallback for hot topic:', inputContent, 'Context:', inputContext);
                         }
-                        inputContent = selectedTopic.dataset.title;
-                        const topicDescription = selectedTopic.dataset.description;
-                        const additionalContext = document.getElementById('selectedTopicDetails').value.trim();
-                        inputContext = `${topicDescription}${additionalContext ? '\nGóc độ bổ sung: ' + additionalContext : ''}`;
-                        console.log('Hot topic selected:', inputContent, 'Context:', inputContext);
                     } else if (inputMethod === 'articles') {
                         const articles = Array.from(document.querySelectorAll('.article-content'))
                             .map(textarea => textarea.value.trim())
@@ -1612,6 +1654,8 @@
 
         // Select hot topic
         window.selectHotTopic = function(card) {
+            console.log('selectHotTopic called with:', card.dataset);
+            
             // Remove previous selection
             document.querySelectorAll('.hot-topic-card').forEach(c => {
                 c.classList.remove('selected', 'border-primary');
@@ -1626,16 +1670,30 @@
             const score = card.dataset.score;
             const source = card.dataset.source;
             
+            console.log('Setting topic details:', { title, description, score, source });
+            
             document.getElementById('selectedTopicTitle').textContent = title;
             document.getElementById('selectedTopicDescription').textContent = description;
             document.getElementById('selectedTopicScore').textContent = score + '%';
             document.getElementById('selectedTopicSource').textContent = source;
             document.getElementById('selectedTopicDisplay').style.display = 'block';
             
-            // Enable context input
+            // IMPORTANT: Clear previous context and set new placeholder
             const contextInput = document.getElementById('selectedTopicDetails');
+            contextInput.value = ''; // Clear previous context
             contextInput.readOnly = false;
             contextInput.placeholder = 'Thêm góc độ, bối cảnh riêng cho chủ đề "' + title + '"...';
+            
+            // Store selected topic data globally for AI generation
+            window.selectedHotTopicData = {
+                title: title,
+                description: description,
+                score: score,
+                source: source,
+                timestamp: Date.now()
+            };
+            
+            console.log('Hot topic selected and stored:', window.selectedHotTopicData);
         }
 
         // Update topics counter
@@ -2141,11 +2199,16 @@
                     setTimeout(() => {
                         const selectedTopicDetails = document.getElementById('selectedTopicDetails');
                         if (selectedTopicDetails) {
-                            console.log('Setting topic details:', title, description);
+                            console.log('quickUseForWriting: Setting topic details:', title, description);
+                            
+                            // CLEAR PREVIOUS DATA FIRST
+                            selectedTopicDetails.value = '';
+                            
+                            // Set new topic data with clear format
                             selectedTopicDetails.value = `${title}\n\n${description}`;
                             selectedTopicDetails.readOnly = false;
                             
-                            // Also update the display
+                            // Update the display
                             const selectedTopicDisplay = document.getElementById('selectedTopicDisplay');
                             const selectedTopicTitle = document.getElementById('selectedTopicTitle');
                             const selectedTopicDescription = document.getElementById('selectedTopicDescription');
@@ -2155,6 +2218,22 @@
                                 selectedTopicDescription.textContent = description;
                                 selectedTopicDisplay.style.display = 'block';
                             }
+                            
+                            // Store topic data globally (consistent with selectHotTopic)
+                            window.selectedHotTopicData = {
+                                title: title,
+                                description: description,
+                                score: 95, // Default high score for standalone topics
+                                source: 'Standalone Hot Topics',
+                                timestamp: Date.now()
+                            };
+                            
+                            console.log('quickUseForWriting: Stored topic data:', window.selectedHotTopicData);
+                            
+                            // Clear any existing hot topic card selections in AI Writing
+                            document.querySelectorAll('.hot-topic-card').forEach(c => {
+                                c.classList.remove('selected', 'border-primary');
+                            });
                             
                             // Show success message
                             alert('✅ Đã chuyển chủ đề sang AI viết bài!');
