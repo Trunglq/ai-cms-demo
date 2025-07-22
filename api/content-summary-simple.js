@@ -66,7 +66,7 @@ module.exports = async (req, res) => {
         }
 
         // Generate realistic headlines based on URL
-        const headlines = generateRealisticHeadlines(url);
+        const headlines = generateRealisticHeadlines(url, settings.maxArticles || 8);
         
         // Create AI summary
         const summary = await generateNewsSummary(headlines, settings);
@@ -120,7 +120,7 @@ module.exports = async (req, res) => {
 };
 
 // Generate realistic headlines based on URL with enhanced coverage
-function generateRealisticHeadlines(url) {
+function generateRealisticHeadlines(url, maxArticles = 8) {
   const hostname = new URL(url).hostname;
   const urlPath = url.toLowerCase();
   
@@ -140,6 +140,8 @@ function generateRealisticHeadlines(url) {
     category = 'law';
   }
   
+  console.log(`🎯 Generating ${maxArticles} headlines for ${hostname} (category: ${category})`);
+  
   const headlines = [];
   
   // Site-specific and category-specific headlines
@@ -153,7 +155,30 @@ function generateRealisticHeadlines(url) {
         'Lãi suất tiết kiệm và cho vay tiếp tục có xu hướng giảm tại các ngân hàng',
         'Bộ Tài chính đề xuất rút gọn biểu thuế thu nhập cá nhân xuống 5 bậc thay vì 7 bậc',
         'Kỷ nguyên vươn mình: Thời điểm vàng cho ngành bảo hiểm nhân thọ Việt Nam',
-        'Phối hợp với các tổ chức tài chính quốc tế để đẩy mạnh phát hành chứng chỉ lưu ký ra nước ngoài'
+        'Phối hợp với các tổ chức tài chính quốc tế để đẩy mạnh phát hành chứng chỉ lưu ký ra nước ngoài',
+        'Các ngân hàng trung ương bối rối trước sự nổi lên của stablecoin trong thanh toán quốc tế',
+        'Yêu cầu doanh nghiệp bảo hiểm khẩn trương hỗ trợ thiệt hại vụ lật tàu tại Quảng Ninh',
+        'Cải cách, đổi mới toàn diện, đồng bộ vì một Việt Nam thịnh vượng trong kỷ nguyên mới',
+        'VN-Index dao động quanh mốc 1,280 điểm với thanh khoản thấp trong phiên sáng',
+        'Tỷ giá USD/VND tại ngân hàng thương mại ổn định quanh mức 24,270-24,290 VND',
+        'Thị trường trái phiếu doanh nghiệp: Khối lượng phát hành tăng 45% trong quý III',
+        'FDI từ Nhật Bản vào Việt Nam tập trung vào ngành sản xuất và công nghệ cao',
+        'Ngành logistics Việt Nam đối mặt thách thức thiếu nhân lực chất lượng cao',
+        'Doanh nghiệp xuất khẩu thủy sản gặp khó khăn do biến đổi khí hậu và dịch bệnh',
+        'Đề xuất siết chặt quản lý thuế đối với hộ kinh doanh quy mô nhỏ',
+        'Hai doanh nghiệp điều chỉnh tăng giá mua, bán vàng miếng SJC theo diễn biến thị trường',
+        'Thuế TP.HCM thu ngân sách từ hộ kinh doanh tăng 213% trong nửa đầu năm 2025'
+      );
+    } else {
+      // Generic VnEconomy headlines for other categories
+      headlines.push(
+        'Kinh tế Việt Nam tăng trưởng ổn định 6.5% trong 9 tháng đầu năm',
+        'Chính phủ ban hành nghị định mới về hỗ trợ doanh nghiệp nhỏ và vừa',
+        'Thị trường bất động sản có dấu hiệu phục hồi tại các thành phố lớn',
+        'Xuất khẩu nông sản Việt Nam vượt mốc 50 tỷ USD trong năm 2025',
+        'Đầu tư công khai thúc đẩy tăng trưởng kinh tế bền vững',
+        'Ngành công nghiệp hỗ trợ Việt Nam thu hút nhiều nhà đầu tư nước ngoài',
+        'Chuyển đổi số trong doanh nghiệp: Xu hướng tất yếu của thời đại mới'
       );
     }
   } else if (hostname.includes('vnexpress.net')) {
@@ -205,11 +230,44 @@ function generateRealisticHeadlines(url) {
     if (category === 'economy') {
       headlines.push(
         'Doanh nghiệp Việt mở rộng thị trường xuất khẩu sang châu Âu và châu Phi',
-        'Ngân hàng số: VietinBank ra mắt nền tảng thanh toán không tiếp xúc',
+        'Ngân hàng số: VietinBank ra mắt nền tảng thanh toán không tiếp xúc mới',
         'Đầu tư nước ngoài: Quỹ Singapore rót 200 triệu USD vào bất động sản Việt',
         'Khởi nghiệp: Startup công nghệ tài chính Việt được định giá 1 tỷ USD',
         'Thương mại điện tử tăng trưởng 28% trong năm 2024, đạt 18.2 tỷ USD',
-        'Logistics: Phát triển mạng lưới cảng biển thông minh tại miền Nam'
+        'Logistics: Phát triển mạng lưới cảng biển thông minh tại miền Nam',
+        'Chứng khoán Việt Nam hút 2.8 tỷ USD vốn đầu tư nước ngoài trong 10 tháng',
+        'Các tập đoàn lớn đẩy mạnh chuyển đổi xanh, giảm 30% khí thải carbon',
+        'Ngành năng lượng tái tạo thu hút 15 tỷ USD đầu tư trong giai đoạn 2024-2025',
+        'Xuất khẩu dệt may Việt Nam phục hồi mạnh với đơn hàng từ EU tăng 25%',
+        'Thị trường M&A Việt Nam sôi động với 180 thương vụ trị giá 12 tỷ USD',
+        'Ngành công nghiệp chế biến thực phẩm Việt Nam mở rộng sang thị trường Mỹ',
+        'Fintech Việt Nam dẫn đầu ASEAN về số lượng giao dịch thanh toán không tiền mặt',
+        'Bất động sản công nghiệp: Nhu cầu thuê kho xưởng tăng 40% tại TP.HCM',
+        'Ngành du lịch Việt Nam hồi phục, đón 16 triệu lượt khách quốc tế năm 2025'
+      );
+    } else if (category === 'social') {
+      headlines.push(
+        'TP.HCM triển khai hệ thống camera AI giám sát giao thông toàn thành phố',
+        'Hà Nội mở rộng không gian đi bộ quanh hồ Hoàn Kiếm vào cuối tuần',
+        'Bộ Y tế khuyến nghị tiêm vaccine cúm mùa để phòng ngừa dịch bệnh mùa đông',
+        'Chương trình "Sách cho em" trao tặng 100,000 đầu sách cho học sinh vùng cao',
+        'Hà Nội thí điểm xe buýt điện thân thiện môi trường trên 5 tuyến chính',
+        'TP.HCM khánh thành bệnh viện đa khoa 1,000 giường tại khu Đông',
+        'Triển khai chương trình "Nước sạch cho mọi nhà" tại các tỉnh miền Trung',
+        'Bộ GD&ĐT công bố kế hoạch tăng thời gian học môn Tiếng Anh trong trường phổ thông',
+        'Hệ thống y tế cơ sở được trang bị thiết bị xét nghiệm nhanh COVID-19 mới',
+        'Chương trình hỗ trợ người cao tuổi sử dụng công nghệ số được mở rộng toàn quốc'
+      );
+    } else {
+      // Generic VietnamNet headlines
+      headlines.push(
+        'Việt Nam tăng cường hợp tác quốc tế trong lĩnh vực giáo dục và đào tạo',
+        'Phát triển du lịch bền vững: Bảo tồn di sản và thu hút khách quốc tế',
+        'Công nghệ blockchain được ứng dụng trong quản lý đất đai tại 10 tỉnh thành',
+        'Chương trình "Làng xanh - Thành phố xanh" được triển khai tại 20 tỉnh',
+        'Nông nghiệp thông minh: Ứng dụng IoT tăng năng suất lúa gạo 15%',
+        'Phát triển kinh tế số: Việt Nam đứng thứ 3 ASEAN về chỉ số số hóa',
+        'Y tế từ xa: Hơn 500 bệnh viện triển khai khám chữa bệnh trực tuyến'
       );
     }
   } else if (hostname.includes('thanhnien.vn')) {
@@ -253,8 +311,11 @@ function generateRealisticHeadlines(url) {
   // Shuffle headlines for variety and pick random selection
   const shuffledHeadlines = headlines.sort(() => Math.random() - 0.5);
   
-  // Return formatted headlines with realistic URLs
-  return shuffledHeadlines.slice(0, Math.min(8, shuffledHeadlines.length)).map((title, index) => ({
+  // Return formatted headlines with realistic URLs, respecting maxArticles
+  console.log(`📊 Available headlines: ${shuffledHeadlines.length}, Requested: ${maxArticles}`);
+  const actualCount = Math.min(maxArticles, shuffledHeadlines.length);
+  
+  return shuffledHeadlines.slice(0, actualCount).map((title, index) => ({
     title: title,
     url: generateRealisticArticleUrl(hostname, title, index),
     timestamp: new Date(Date.now() - Math.random() * 6 * 60 * 60 * 1000).toISOString(), // Random time within last 6h (more recent)
