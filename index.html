@@ -1312,7 +1312,7 @@
                                             <div class="form-check">
                                                 <input class="form-check-input" type="radio" name="summaryMode" id="categorySummary" value="category" checked>
                                                 <label class="form-check-label" for="categorySummary">
-                                                    <i class="fas fa-newspaper me-1"></i> Tóm tắt chuyên mục báo
+                                                    <i class="fas fa-list-ul me-1"></i> Điểm tin chuyên mục
                                                 </label>
                                             </div>
                                         </div>
@@ -1334,11 +1334,11 @@
                                         <input type="url" class="form-control" id="categoryUrl" placeholder="https://vnexpress.net/thoi-su hoặc https://tuoitre.vn/thoi-su.htm">
                                         <div class="form-text">
                                             <i class="fas fa-info-circle me-1"></i>
-                                            Paste đường dẫn chuyên mục của báo (VD: Thời sự, Kinh doanh, Thể thao...) để tóm tắt tất cả bài trong ngày
+                                            Paste đường dẫn chuyên mục (VD: Thời sự, Kinh doanh...) để tạo điểm tin từ các tiêu đề trong ngày - nhanh & hiệu quả!
                                         </div>
                                     </div>
                                     <div class="mb-3">
-                                        <label for="categorySettings" class="form-label"><i class="fas fa-cog me-2"></i>Tùy chọn tóm tắt:</label>
+                                        <label for="categorySettings" class="form-label"><i class="fas fa-cog me-2"></i>Tùy chọn điểm tin:</label>
                                         <div class="row">
                                             <div class="col-md-4">
                                                 <select id="categoryLength" class="form-select form-select-sm">
@@ -2590,7 +2590,7 @@
             
             // Update source info
             document.getElementById('sourceUrl').textContent = url;
-            document.getElementById('sourceType').textContent = mode === 'category' ? 'Chuyên mục báo' : 'Bài viết đơn lẻ';
+            document.getElementById('sourceType').textContent = mode === 'category' ? 'Điểm tin chuyên mục' : 'Bài viết đơn lẻ';
             document.getElementById('summaryTime').textContent = new Date().toLocaleString('vi-VN');
             
             // Format and display summary content

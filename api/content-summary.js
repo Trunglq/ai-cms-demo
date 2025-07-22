@@ -44,8 +44,8 @@ async function summarizeCategory(categoryUrl, settings) {
 
   console.log(`Summarizing category: ${categoryUrl} with ${maxArticles} articles`);
 
-  // Extract articles from category page
-  const articles = await extractCategoryArticles(categoryUrl, maxArticles);
+  // Extract article headlines from category page (no full content needed)
+  const articles = await extractCategoryHeadlines(categoryUrl, maxArticles);
   
   if (articles.length === 0) {
     throw new Error(`Không tìm thấy bài báo nào trong chuyên mục này. URL: ${categoryUrl}. Có thể do: 1) Trang web chặn bot, 2) Cấu trúc HTML thay đổi, 3) URL không hợp lệ. Thử với URL bài viết đơn lẻ thay vì chuyên mục.`);
@@ -53,14 +53,16 @@ async function summarizeCategory(categoryUrl, settings) {
 
   console.log(`Found ${articles.length} articles to summarize`);
 
-  // Build comprehensive content from all articles
-  const combinedContent = articles.map(article => 
-    `**${article.title}**\n${article.content || article.description}\n`
-  ).join('\n---\n\n');
+  // Create news digest from headlines only (no need for full content)
+  const headlinesList = articles.map((article, index) => 
+    `${index + 1}. ${article.title}`
+  ).join('\n');
 
-  // Generate summary using OpenAI
-  const summary = await generateAISummary(combinedContent, {
-    type: 'category',
+  console.log(`Creating news digest from ${articles.length} headlines`);
+
+  // Generate news digest summary from headlines only
+  const summary = await generateAISummary(headlinesList, {
+    type: 'newsdigest',
     length: length,
     focus: focus,
     articleCount: articles.length,
@@ -95,8 +97,9 @@ async function summarizeArticle(articleUrl, settings) {
   return summary;
 }
 
-// Extract articles from category page
-async function extractCategoryArticles(categoryUrl, maxArticles) {
+// Extract article headlines from category page (simplified - no content extraction)
+// NEW APPROACH: Only get titles/headlines for news digest, much faster & more reliable
+async function extractCategoryHeadlines(categoryUrl, maxArticles) {
   const puppeteer = require('puppeteer');
   
   let browser;
@@ -480,6 +483,42 @@ ${content}
 Nguồn: ${source}
 
 Tạo tóm tắt ${length} theo trọng tâm ${focus}.`;
+
+  } else if (type === 'newsdigest') {
+    systemPrompt = `Bạn là chuyên gia tạo điểm tin từ các tiêu đề báo, với khả năng nhóm và tóm tắt thông tin hiệu quả.
+
+NHIỆM VỤ: Tạo "Điểm tin" từ ${articleCount} tiêu đề bài báo trong ngày.
+
+PHONG CÁCH ĐIỂM TIN:
+- Ngôn ngữ súc tích, rõ ràng
+- Nhóm các tin liên quan với nhau
+- Ưu tiên thông tin quan trọng
+- Tránh lặp lại nội dung tương tự
+
+ĐỘ DÀI: ${getLengthSpec(length)}
+TRỌNG TÂMM: ${getFocusSpec(focus)}
+
+CẤU TRÚC ĐIỂM TIN:
+1. **🔥 Nổi bật trong ngày** - Các tin quan trọng nhất
+2. **📊 Kinh tế - Xã hội** - Nhóm tin tương tự
+3. **⚡ Thông tin khác** - Các tin còn lại
+4. **📝 Tóm tắt** - Điểm chính cần lưu ý
+
+QUY TẮC NHÓM TIN:
+- Ghép các tin cùng chủ đề (VD: chứng khoán, COVID, chính trị)
+- Sắp xếp theo mức độ quan trọng
+- Ghi rõ số lượng tin trong mỗi nhóm
+- Tránh chi tiết quá sâu, tập trung vào overview
+
+QUAN TRỌNG: Chỉ dựa vào tiêu đề được cung cấp, không bịa đặt nội dung!`;
+
+    userPrompt = `Từ ${articleCount} tiêu đề bài báo sau, hãy tạo "Điểm tin" ${length} theo trọng tâm ${focus}:
+
+${content}
+
+Nguồn: ${source}
+
+Nhóm các tiêu đề liên quan và tóm tắt thành điểm tin dễ đọc, dễ hiểu.`;
 
   } else if (type === 'article') {
     systemPrompt = `Bạn là chuyên gia tóm tắt bài báo với khả năng trích xuất thông tin quan trọng nhất.
