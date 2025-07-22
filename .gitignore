@@ -2,4 +2,19 @@ node_modules/
 .env
 .DS_Store
 Thumbs.db
-*.log 
+*.log
+
+# Google Cloud Service Account Credentials - SECURITY
+*-key.json
+*service-account*.json
+*credentials*.json
+*-base64.txt
+*-vercel.json
+aicms-test-*.json
+aicms-test-*.txt
+
+# API Keys and Sensitive Data
+*.pem
+*.key
+*.cert
+credentials/ 
