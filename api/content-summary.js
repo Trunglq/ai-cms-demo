@@ -1,8 +1,17 @@
 module.exports = async (req, res) => {
-  // Add CORS headers for better compatibility
+  // Add CORS headers for better compatibility  
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  // Quick health check response
+  if (req.query.test === 'health') {
+    return res.json({ 
+      success: true, 
+      message: "Content Summary API is healthy!",
+      timestamp: new Date().toISOString()
+    });
+  }
   
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -13,6 +22,12 @@ module.exports = async (req, res) => {
   }
 
   try {
+    console.log('🚀 Content Summary API v3: Request received', {
+      method: req.method,
+      body: req.body ? Object.keys(req.body) : 'no body',
+      url: req.url
+    });
+    
     const { mode, url, settings } = req.body;
 
     if (!url) {
