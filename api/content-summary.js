@@ -1,4 +1,13 @@
 module.exports = async (req, res) => {
+  // Add CORS headers for better compatibility
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -10,7 +19,7 @@ module.exports = async (req, res) => {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    console.log(`Content Summary: ${mode} mode for ${url}`);
+    console.log(`🚀 Content Summary API v2: ${mode} mode for ${url}`);
 
     let summary;
     if (mode === 'category') {
