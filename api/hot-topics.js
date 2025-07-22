@@ -87,13 +87,13 @@ async function fetchEnhancedHotTopics(selectedSources) {
   }
 }
 
-// Generate current trending topics using AI
+// Generate current trending topics using AI (reduced to avoid too many similar topics)
 async function generateCurrentTrendingTopics() {
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
     console.log('No OpenAI API key, using fallback topics');
-    return getFallbackTopics().slice(0, 4);
+    return getFallbackTopics().slice(0, 2);
   }
 
   try {
@@ -107,20 +107,20 @@ async function generateCurrentTrendingTopics() {
         model: 'gpt-4o-mini',
         messages: [{
           role: 'user',
-          content: `Hãy tạo ra 4 chủ đề đang HOT và trending nhất hiện tại tại Việt Nam (tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}) để viết báo. 
+          content: `Hãy tạo ra 2 chủ đề đang HOT và trending nhất hiện tại tại Việt Nam (tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}) để viết báo. 
 
 Yêu cầu:
 - Chủ đề phải thực tế, có tính thời sự cao
 - Phù hợp với người Việt Nam
 - Có thể viết thành bài báo hay
-- Bao gồm: kinh tế, công nghệ, xã hội, văn hóa
+- Bao gồm diverse categories
 
 Trả về JSON format:
 [
   {
     "title": "Tiêu đề ngắn gọn",
     "description": "Mô tả chi tiết 1-2 câu",
-    "category": "Loại (Kinh tế/Công nghệ/Xã hội/Văn hóa)",
+    "category": "Loại (Kinh tế/Công nghệ/Xã hội/Văn hóa/Crypto/Chứng khoán/Thể thao/Giáo dục/Sức khỏe/Du lịch)",
     "score": 95,
     "source": "Current Events"
   }
@@ -179,6 +179,20 @@ async function generateGoogleTrendingTopics() {
       category: "Thể thao",
       score: 94,
       source: "Google Trends"
+    },
+    {
+      title: "AI và ChatGPT trong ngành giáo dục Việt Nam",
+      description: "Tác động của trí tuệ nhân tạo đến phương pháp học tập, giảng dạy và tự động hóa trong giáo dục",
+      category: "Giáo dục",
+      score: 91,
+      source: "Google Trends"
+    },
+    {
+      title: "Fintech và ví điện tử cạnh tranh khốc liệt",
+      description: "Cuộc đua của các ví điện tử như MoMo, ZaloPay, ViettelPay trong thanh toán không tiền mặt",
+      category: "Công nghệ",
+      score: 88,
+      source: "Google Trends"
     }
   ];
 }
@@ -205,6 +219,27 @@ async function generateBaoMoiTrendingTopics() {
       description: "Sự phục hồi của ngành du lịch Việt Nam và xu hướng du lịch nội địa của người dân",
       category: "Du lịch",
       score: 78,
+      source: "BaoMoi.com"
+    },
+    {
+      title: "Cổ phiếu ngân hàng và bất động sản tăng trưởng",
+      description: "Các cổ phiếu nhóm ngân hàng như VCB, TCB và BID dẫn dắt thị trường chứng khoán",
+      category: "Chứng khoán",
+      score: 93,
+      source: "BaoMoi.com"
+    },
+    {
+      title: "Tết Nguyên đán và văn hóa truyền thống",
+      description: "Chuẩn bị cho Tết cổ truyền, phong tục tập quán và ý nghĩa văn hóa dân tộc",
+      category: "Văn hóa",
+      score: 82,
+      source: "BaoMoi.com"
+    },
+    {
+      title: "Startup công nghệ Việt gọi vốn thành công",
+      description: "Các startup công nghệ trong nước thu hút đầu tư nước ngoài và mở rộng quy mô",
+      category: "Kinh tế",
+      score: 84,
       source: "BaoMoi.com"
     }
   ];
@@ -233,6 +268,27 @@ async function generateSocialMediaTrendingTopics() {
       category: "Sức khỏe",
       score: 86,
       source: "Social Media"
+    },
+    {
+      title: "Đội tuyển Việt Nam và HLV Troussier",
+      description: "Chiến thuật mới của HLV Troussier, thành tích đội tuyển và kỳ vọng của người hâm mộ",
+      category: "Thể thao",
+      score: 89,
+      source: "Social Media"
+    },
+    {
+      title: "Ethereum và DeFi hút vốn mạnh",
+      description: "Sự phát triển của hệ sinh thái DeFi trên Ethereum, các dự án NFT và Web3",
+      category: "Crypto",
+      score: 87,
+      source: "Social Media"
+    },
+    {
+      title: "Điện thoại thông minh và camera AI",
+      description: "Các tính năng camera AI mới trên smartphone, chụp ảnh chuyên nghiệp bằng điện thoại",
+      category: "Công nghệ",
+      score: 83,
+      source: "Social Media"
     }
   ];
 }
@@ -259,6 +315,34 @@ async function generateVietnameseNewsTrendingTopics() {
       description: "Các dự án năng lượng mặt trời, gió và cam kết Net Zero của Việt Nam đến 2050",
       category: "Xã hội",
       score: 81,
+      source: "Vietnamese News"
+    },
+    {
+      title: "Chương trình đào tạo nghề và việc làm",
+      description: "Chính sách đào tạo nghề mới, kết nối doanh nghiệp và trường học, giải quyết thất nghiệp",
+      category: "Giáo dục",
+      score: 86,
+      source: "Vietnamese News"
+    },
+    {
+      title: "Du lịch biển đảo và phát triển kinh tế xanh",
+      description: "Phát triển du lịch bền vững tại các vùng biển, bảo vệ môi trường và tạo thu nhập cho địa phương",
+      category: "Du lịch",
+      score: 79,
+      source: "Vietnamese News"
+    },
+    {
+      title: "Hệ thống y tế và chuyển đổi số trong khám chữa bệnh",
+      description: "Ứng dụng công nghệ vào y tế, khám bệnh online, hồ sơ sức khỏe điện tử",
+      category: "Sức khỏe",
+      score: 84,
+      source: "Vietnamese News"
+    },
+    {
+      title: "Festival âm nhạc và sự kiện văn hóa lớn",
+      description: "Các lễ hội âm nhạc quốc tế, sự kiện văn hóa thu hút du khách trong và ngoài nước",
+      category: "Văn hóa",
+      score: 77,
       source: "Vietnamese News"
     }
   ];
