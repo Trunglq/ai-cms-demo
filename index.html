@@ -192,7 +192,7 @@
             <a class="list-group-item list-group-item-action" data-feature="ai-write"><i class="fas fa-edit me-2"></i>AI viết bài tự động</a>
             <a class="list-group-item list-group-item-action" data-feature="spell-check"><i class="fas fa-spell-check me-2 text-success"></i>Kiểm tra lỗi chính tả</a>
             <a class="list-group-item list-group-item-action" data-feature="hot-topics"><i class="fas fa-fire me-2"></i>Gợi ý chủ đề HOT</a>
-            <a class="list-group-item list-group-item-action" data-feature="content-summary"><i class="fas fa-compress-alt me-2"></i>Tóm tắt nội dung</a>
+                            <a class="list-group-item list-group-item-action" data-feature="content-summary"><i class="fas fa-compress-alt me-2"></i>Tóm tắt nội dung</a>
             <a class="list-group-item list-group-item-action" data-feature="tts"><i class="fas fa-volume-up me-2"></i>Text to Speech</a>
             <a class="list-group-item list-group-item-action" data-feature="stt"><i class="fas fa-microphone me-2"></i>Speech to Text</a>
             <a class="list-group-item list-group-item-action" data-feature="translate-en-vi"><i class="fas fa-language me-2 text-success"></i>Dịch Anh sang Việt</a>
@@ -1453,6 +1453,153 @@
 
                     // Initialize Content Summary functionality
                     initializeContentSummaryFeature();
+                } else if (feature === 'tts') {
+                    content.innerHTML = `
+                        <h2><i class="fas fa-volume-up me-2 text-primary"></i>Text to Speech</h2>
+                        
+                        <!-- Settings Panel -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Cài đặt giọng đọc</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Ngôn ngữ:</label>
+                                        <select id="ttsLanguage" class="form-select">
+                                            <option value="vi-VN">🇻🇳 Tiếng Việt</option>
+                                            <option value="en-US">🇺🇸 Tiếng Anh (Mỹ)</option>
+                                            <option value="en-GB">🇬🇧 Tiếng Anh (Anh)</option>
+                                            <option value="ja-JP">🇯🇵 Tiếng Nhật</option>
+                                            <option value="ko-KR">🇰🇷 Tiếng Hàn</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Giọng đọc:</label>
+                                        <select id="ttsVoice" class="form-select">
+                                            <option value="vi-VN-Standard-A">Nữ - Chuẩn A</option>
+                                            <option value="vi-VN-Standard-B">Nam - Chuẩn B</option>
+                                            <option value="vi-VN-Standard-C">Nữ - Chuẩn C</option>
+                                            <option value="vi-VN-Standard-D">Nam - Chuẩn D</option>
+                                            <option value="vi-VN-Wavenet-A">Nữ - WaveNet A (Chất lượng cao)</option>
+                                            <option value="vi-VN-Wavenet-B">Nam - WaveNet B (Chất lượng cao)</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Tốc độ đọc:</label>
+                                        <select id="ttsSpeed" class="form-select">
+                                            <option value="0.7">🐌 Chậm (0.7x)</option>
+                                            <option value="1.0" selected>⏸️ Bình thường (1.0x)</option>
+                                            <option value="1.2">⏩ Nhanh (1.2x)</option>
+                                            <option value="1.5">⏭️ Rất nhanh (1.5x)</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Input Text Panel -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-edit me-2"></i>Văn bản cần đọc</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="ttsText" class="form-label">Nhập hoặc dán văn bản:</label>
+                                    <textarea class="form-control" id="ttsText" rows="8" 
+                                        placeholder="Paste văn bản cần chuyển thành giọng nói ở đây...&#10;&#10;💡 Mẹo: Bạn có thể dán nội dung từ tính năng 'Tóm tắt nội dung' hoặc 'AI viết bài'"></textarea>
+                                </div>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <small class="text-muted">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Giới hạn: <span id="textLength">0</span>/5000 ký tự
+                                        </small>
+                                    </div>
+                                    <div>
+                                        <button id="clearTextBtn" class="btn btn-sm btn-outline-secondary me-2">
+                                            <i class="fas fa-eraser me-1"></i>Xóa
+                                        </button>
+                                        <button id="generateTTSBtn" class="btn btn-primary">
+                                            <i class="fas fa-magic me-1"></i>Tạo giọng nói
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Panel -->
+                        <div id="ttsResultsPanel" class="card" style="display: none;">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-headphones me-2"></i>Kết quả</h5>
+                            </div>
+                            <div class="card-body">
+                                <!-- Audio Player -->
+                                <div class="mb-3">
+                                    <div class="d-flex align-items-center mb-2">
+                                        <i class="fas fa-play-circle text-success me-2 fs-4"></i>
+                                        <strong>Audio Player:</strong>
+                                    </div>
+                                    <audio id="ttsAudio" controls class="w-100" preload="none">
+                                        Your browser does not support the audio element.
+                                    </audio>
+                                </div>
+
+                                <!-- Controls -->
+                                <div class="d-flex flex-wrap gap-2 mb-3">
+                                    <button id="playBtn" class="btn btn-success" disabled>
+                                        <i class="fas fa-play me-1"></i>Phát
+                                    </button>
+                                    <button id="pauseBtn" class="btn btn-warning" disabled>
+                                        <i class="fas fa-pause me-1"></i>Tạm dừng
+                                    </button>
+                                    <button id="stopBtn" class="btn btn-danger" disabled>
+                                        <i class="fas fa-stop me-1"></i>Dừng
+                                    </button>
+                                    <button id="downloadBtn" class="btn btn-info" disabled>
+                                        <i class="fas fa-download me-1"></i>Tải xuống MP3
+                                    </button>
+                                </div>
+
+                                <!-- Audio Info -->
+                                <div id="audioInfo" class="alert alert-info" style="display: none;">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <strong>📊 Thông tin audio:</strong>
+                                            <ul class="mb-0 mt-1">
+                                                <li>Độ dài: <span id="audioDuration">--</span></li>
+                                                <li>Kích thước: <span id="audioSize">--</span></li>
+                                                <li>Giọng đọc: <span id="usedVoice">--</span></li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <strong>⚡ Trạng thái:</strong>
+                                            <ul class="mb-0 mt-1">
+                                                <li>Thời gian tạo: <span id="processingTime">--</span></li>
+                                                <li>Chất lượng: <span id="audioQuality">--</span></li>
+                                                <li>API: <span class="badge bg-success">Google Cloud TTS</span></li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Loading State -->
+                        <div id="ttsLoadingPanel" class="text-center py-4" style="display: none;">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 mb-0">
+                                <i class="fas fa-magic me-1"></i>
+                                <strong>Đang tạo giọng nói...</strong>
+                            </p>
+                            <small class="text-muted">Vui lòng đợi trong giây lát</small>
+                        </div>
+                    `;
+                    
+                    // Initialize TTS functionality
+                    initializeTTSFeature();
                 } else {
                     content.innerHTML = `<h2>${this.textContent}</h2><p>Đang phát triển tính năng: ${feature}. Nội dung sẽ được thêm sau.</p>`;
                 }
@@ -2766,6 +2913,250 @@
                 statusSpan.className = 'text-danger fw-bold';
             }
         };
+
+        // Text to Speech Feature Implementation
+        function initializeTTSFeature() {
+            console.log('🎤 Initializing Text to Speech feature...');
+
+            // Get DOM elements
+            const ttsText = document.getElementById('ttsText');
+            const textLength = document.getElementById('textLength');
+            const clearTextBtn = document.getElementById('clearTextBtn');
+            const generateTTSBtn = document.getElementById('generateTTSBtn');
+            const ttsLanguage = document.getElementById('ttsLanguage');
+            const ttsVoice = document.getElementById('ttsVoice');
+            const ttsSpeed = document.getElementById('ttsSpeed');
+            const ttsResultsPanel = document.getElementById('ttsResultsPanel');
+            const ttsLoadingPanel = document.getElementById('ttsLoadingPanel');
+            const ttsAudio = document.getElementById('ttsAudio');
+            const playBtn = document.getElementById('playBtn');
+            const pauseBtn = document.getElementById('pauseBtn');
+            const stopBtn = document.getElementById('stopBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+
+            // Text length counter
+            const updateTextLength = () => {
+                const length = ttsText.value.length;
+                textLength.textContent = length;
+                if (length > 5000) {
+                    textLength.parentElement.classList.add('text-danger');
+                    generateTTSBtn.disabled = true;
+                } else {
+                    textLength.parentElement.classList.remove('text-danger');
+                    generateTTSBtn.disabled = length === 0;
+                }
+            };
+
+            // Language change handler - update voice options
+            const updateVoiceOptions = () => {
+                const language = ttsLanguage.value;
+                const voiceSelect = ttsVoice;
+                voiceSelect.innerHTML = '';
+
+                const voiceOptions = {
+                    'vi-VN': [
+                        { value: 'vi-VN-Standard-A', label: 'Nữ - Chuẩn A' },
+                        { value: 'vi-VN-Standard-B', label: 'Nam - Chuẩn B' },
+                        { value: 'vi-VN-Standard-C', label: 'Nữ - Chuẩn C' },
+                        { value: 'vi-VN-Standard-D', label: 'Nam - Chuẩn D' },
+                        { value: 'vi-VN-Wavenet-A', label: 'Nữ - WaveNet A (Cao cấp)' },
+                        { value: 'vi-VN-Wavenet-B', label: 'Nam - WaveNet B (Cao cấp)' },
+                    ],
+                    'en-US': [
+                        { value: 'en-US-Standard-A', label: 'Female - Standard A' },
+                        { value: 'en-US-Standard-B', label: 'Male - Standard B' },
+                        { value: 'en-US-Standard-C', label: 'Female - Standard C' },
+                        { value: 'en-US-Standard-D', label: 'Male - Standard D' },
+                        { value: 'en-US-Wavenet-A', label: 'Female - WaveNet A' },
+                        { value: 'en-US-Wavenet-B', label: 'Male - WaveNet B' },
+                    ],
+                    'en-GB': [
+                        { value: 'en-GB-Standard-A', label: 'Female - Standard A' },
+                        { value: 'en-GB-Standard-B', label: 'Male - Standard B' },
+                        { value: 'en-GB-Wavenet-A', label: 'Female - WaveNet A' },
+                        { value: 'en-GB-Wavenet-B', label: 'Male - WaveNet B' },
+                    ],
+                    'ja-JP': [
+                        { value: 'ja-JP-Standard-A', label: 'Female - Standard A' },
+                        { value: 'ja-JP-Standard-B', label: 'Female - Standard B' },
+                        { value: 'ja-JP-Wavenet-A', label: 'Female - WaveNet A' },
+                        { value: 'ja-JP-Wavenet-B', label: 'Female - WaveNet B' },
+                    ],
+                    'ko-KR': [
+                        { value: 'ko-KR-Standard-A', label: 'Female - Standard A' },
+                        { value: 'ko-KR-Standard-B', label: 'Female - Standard B' },
+                        { value: 'ko-KR-Wavenet-A', label: 'Female - WaveNet A' },
+                        { value: 'ko-KR-Wavenet-B', label: 'Female - WaveNet B' },
+                    ]
+                };
+
+                const voices = voiceOptions[language] || voiceOptions['vi-VN'];
+                voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.value;
+                    option.textContent = voice.label;
+                    voiceSelect.appendChild(option);
+                });
+            };
+
+            // Event listeners
+            ttsText.addEventListener('input', updateTextLength);
+            ttsLanguage.addEventListener('change', updateVoiceOptions);
+            
+            clearTextBtn.addEventListener('click', () => {
+                ttsText.value = '';
+                updateTextLength();
+                ttsResultsPanel.style.display = 'none';
+            });
+
+            // Generate TTS
+            generateTTSBtn.addEventListener('click', async () => {
+                const text = ttsText.value.trim();
+                if (!text) {
+                    alert('⚠️ Vui lòng nhập văn bản cần chuyển thành giọng nói!');
+                    return;
+                }
+
+                if (text.length > 5000) {
+                    alert('⚠️ Văn bản quá dài! Vui lòng giữ trong giới hạn 5000 ký tự.');
+                    return;
+                }
+
+                // Show loading
+                ttsLoadingPanel.style.display = 'block';
+                ttsResultsPanel.style.display = 'none';
+                generateTTSBtn.disabled = true;
+
+                const startTime = Date.now();
+
+                try {
+                    console.log('🎤 Sending TTS request...');
+                    
+                    const response = await fetch('/api/text-to-speech', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: text,
+                            language: ttsLanguage.value,
+                            voice: ttsVoice.value,
+                            speed: parseFloat(ttsSpeed.value)
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ TTS response:', result);
+
+                    if (result.success && result.audioUrl) {
+                        // Set audio source
+                        ttsAudio.src = result.audioUrl;
+                        
+                        // Enable controls
+                        playBtn.disabled = false;
+                        pauseBtn.disabled = false;
+                        stopBtn.disabled = false;
+                        downloadBtn.disabled = false;
+
+                        // Update info
+                        const processingTime = Date.now() - startTime;
+                        document.getElementById('audioDuration').textContent = result.duration || 'N/A';
+                        document.getElementById('audioSize').textContent = result.size || 'N/A';
+                        document.getElementById('usedVoice').textContent = result.voiceUsed || ttsVoice.value;
+                        document.getElementById('processingTime').textContent = `${processingTime}ms`;
+                        document.getElementById('audioQuality').textContent = result.quality || 'Standard';
+
+                        // Show results
+                        document.getElementById('audioInfo').style.display = 'block';
+                        ttsResultsPanel.style.display = 'block';
+                        
+                        // Scroll to results
+                        ttsResultsPanel.scrollIntoView({ behavior: 'smooth' });
+                        
+                        // Success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                        successAlert.innerHTML = `
+                            ✅ <strong>Tạo giọng nói thành công!</strong> 
+                            Thời gian xử lý: ${processingTime}ms
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        ttsResultsPanel.insertBefore(successAlert, ttsResultsPanel.firstChild);
+
+                        // Auto remove success alert after 5s
+                        setTimeout(() => {
+                            if (successAlert && successAlert.parentNode) {
+                                successAlert.remove();
+                            }
+                        }, 5000);
+
+                    } else {
+                        throw new Error(result.error || 'Không nhận được audio từ server');
+                    }
+
+                } catch (error) {
+                    console.error('❌ TTS Error:', error);
+                    alert(`❌ Lỗi tạo giọng nói:\\n\\n${error.message}\\n\\nVui lòng thử lại sau.`);
+                } finally {
+                    ttsLoadingPanel.style.display = 'none';
+                    generateTTSBtn.disabled = false;
+                }
+            });
+
+            // Audio controls
+            playBtn.addEventListener('click', () => ttsAudio.play());
+            pauseBtn.addEventListener('click', () => ttsAudio.pause());
+            stopBtn.addEventListener('click', () => {
+                ttsAudio.pause();
+                ttsAudio.currentTime = 0;
+            });
+
+            // Download functionality
+            downloadBtn.addEventListener('click', () => {
+                if (ttsAudio.src) {
+                    const link = document.createElement('a');
+                    link.href = ttsAudio.src;
+                    link.download = `tts-audio-${Date.now()}.mp3`;
+                    link.click();
+                }
+            });
+
+            // Initialize
+            updateVoiceOptions();
+            updateTextLength();
+
+            // Check if content was passed from Content Summary
+            if (window.currentSummaryContent) {
+                ttsText.value = window.currentSummaryContent;
+                updateTextLength();
+                console.log('📝 Auto-populated text from Content Summary');
+                
+                // Clear the passed content
+                delete window.currentSummaryContent;
+                
+                // Show success message
+                setTimeout(() => {
+                    const autoAlert = document.createElement('div');
+                    autoAlert.className = 'alert alert-info alert-dismissible fade show';
+                    autoAlert.innerHTML = `
+                        ✅ <strong>Đã nhận nội dung từ tính năng "Tóm tắt nội dung"!</strong>
+                        <br><small>Bạn có thể chỉnh sửa văn bản hoặc nhấn "Tạo giọng nói" để bắt đầu.</small>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('.card-body').insertBefore(autoAlert, document.querySelector('.card-body').firstChild);
+                    
+                    setTimeout(() => {
+                        if (autoAlert && autoAlert.parentNode) {
+                            autoAlert.remove();
+                        }
+                    }, 8000);
+                }, 500);
+            }
+
+            console.log('✅ Text to Speech feature initialized successfully!');
+        }
     </script>
 </body>
 </html> 
