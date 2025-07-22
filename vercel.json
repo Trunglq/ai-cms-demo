@@ -2,12 +2,19 @@
   "functions": {
     "api/content-summary.js": {
       "maxDuration": 60
+    },
+    "api/content-summary-simple.js": {
+      "maxDuration": 30
     }
   },
   "rewrites": [
     {
       "source": "/api/content-summary",
       "destination": "/api/content-summary.js"
+    },
+    {
+      "source": "/api/content-summary-simple",
+      "destination": "/api/content-summary-simple.js"
     }
   ]
 } 

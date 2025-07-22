@@ -2537,7 +2537,7 @@
                     btn.innerHTML = '⏳ Đang tóm tắt...';
                     
                     // Call API
-                    const response = await fetch('/api/content-summary', {
+                                                const response = await fetch('/api/content-summary-simple', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -2712,7 +2712,7 @@
                 
                 // Test 1: GET debug
                 console.log('1. Testing GET debug...');
-                const getDebugResponse = await fetch('/api/content-summary?debug=true');
+                const getDebugResponse = await fetch('/api/content-summary-simple?debug=true');
                 console.log('GET debug response:', getDebugResponse.status);
                 if (getDebugResponse.ok) {
                     const getDebugData = await getDebugResponse.json();
@@ -2721,7 +2721,7 @@
                 
                 // Test 2: POST debug  
                 console.log('2. Testing POST debug...');
-                const postDebugResponse = await fetch('/api/content-summary?debug=true', {
+                const postDebugResponse = await fetch('/api/content-summary-simple?debug=true', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ test: 'debug post' })
@@ -2737,7 +2737,7 @@
                 
                 // Test 3: Actual POST request
                 console.log('3. Testing actual POST request...');
-                const actualPostResponse = await fetch('/api/content-summary', {
+                const actualPostResponse = await fetch('/api/content-summary-simple', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
