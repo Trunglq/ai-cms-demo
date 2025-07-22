@@ -1307,6 +1307,7 @@
                         <div class="alert alert-info mb-3">
                             <strong>🔧 API Status Test:</strong>
                             <button class="btn btn-sm btn-outline-primary ms-2" onclick="testApiEndpoint()">Test API</button>
+                            <button class="btn btn-sm btn-outline-warning ms-2" onclick="debugApiEndpoint()">Debug API</button>
                             <span id="apiStatus" class="ms-2"></span>
                         </div>
                         
@@ -2698,6 +2699,71 @@
                      `• API function not deployed correctly\n` +
                      `• Caching issues\n\n` +
                      `💡 Solution: Wait 1-2 minutes and try again`);
+            }
+        };
+
+        // Debug API Endpoint 
+        window.debugApiEndpoint = async function() {
+            const statusSpan = document.getElementById('apiStatus');
+            statusSpan.innerHTML = '🔍 Debugging...';
+            
+            try {
+                console.log('🔧 Debug: Testing different request types...');
+                
+                // Test 1: GET debug
+                console.log('1. Testing GET debug...');
+                const getDebugResponse = await fetch('/api/content-summary?debug=true');
+                console.log('GET debug response:', getDebugResponse.status);
+                if (getDebugResponse.ok) {
+                    const getDebugData = await getDebugResponse.json();
+                    console.log('GET debug data:', getDebugData);
+                }
+                
+                // Test 2: POST debug  
+                console.log('2. Testing POST debug...');
+                const postDebugResponse = await fetch('/api/content-summary?debug=true', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ test: 'debug post' })
+                });
+                console.log('POST debug response:', postDebugResponse.status, postDebugResponse.statusText);
+                if (postDebugResponse.ok) {
+                    const postDebugData = await postDebugResponse.json();
+                    console.log('POST debug data:', postDebugData);
+                } else {
+                    const postDebugError = await postDebugResponse.text();
+                    console.error('POST debug error:', postDebugError);
+                }
+                
+                // Test 3: Actual POST request
+                console.log('3. Testing actual POST request...');
+                const actualPostResponse = await fetch('/api/content-summary', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        mode: 'category',
+                        url: 'https://vneconomy.vn/tai-chinh.htm',
+                        settings: { length: 'medium', focus: 'general', maxArticles: 5 }
+                    })
+                });
+                console.log('Actual POST response:', actualPostResponse.status, actualPostResponse.statusText);
+                
+                if (actualPostResponse.ok) {
+                    const actualData = await actualPostResponse.json();
+                    console.log('Actual POST data:', actualData);
+                    statusSpan.innerHTML = '✅ All tests passed! POST is working!';
+                    statusSpan.className = 'text-success fw-bold';
+                } else {
+                    const actualError = await actualPostResponse.text();
+                    console.error('Actual POST error:', actualError);
+                    statusSpan.innerHTML = `❌ POST fails with ${actualPostResponse.status}`;
+                    statusSpan.className = 'text-danger fw-bold';
+                }
+                
+            } catch (error) {
+                console.error('Debug Error:', error);
+                statusSpan.innerHTML = `❌ Debug failed: ${error.message}`;
+                statusSpan.className = 'text-danger fw-bold';
             }
         };
     </script>

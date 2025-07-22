@@ -1,24 +1,53 @@
 module.exports = async (req, res) => {
+  console.log('🚀 Content Summary API v5-FINAL: Request received', {
+    method: req.method,
+    query: req.query,
+    hasBody: !!req.body,
+    url: req.url,
+    timestamp: new Date().toISOString()
+  });
+  
   // Add CORS headers for better compatibility  
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   
-  // Quick health check response
-  if (req.query.test === 'health') {
-    return res.json({ 
-      success: true, 
-      message: "Content Summary API is healthy!",
-      timestamp: new Date().toISOString()
-    });
-  }
-  
+  // Handle different request types
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return res.status(200).end();
   }
   
+  // Health check response (GET or POST)
+  if (req.query.test === 'health') {
+    console.log('Handling health check');
+    return res.json({ 
+      success: true, 
+      message: "Content Summary API v5 is healthy!",
+      timestamp: new Date().toISOString(),
+      method: req.method
+    });
+  }
+  
+  // Debug endpoint to see what we're receiving
+  if (req.query.debug === 'true') {
+    console.log('Debug request received');
+    return res.json({
+      success: true,
+      debug: {
+        method: req.method,
+        query: req.query,
+        body: req.body,
+        headers: Object.keys(req.headers || {}),
+        url: req.url
+      }
+    });
+  }
+  
+  // Only POST is allowed for actual summarization
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    console.log('Invalid method:', req.method);
+    return res.status(405).json({ error: 'Method not allowed. Use POST for summarization.' });
   }
 
   try {
