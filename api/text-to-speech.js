@@ -40,10 +40,17 @@ module.exports = async (req, res) => {
 
     // Health check
     if (req.method === 'GET') {
+        if (!ttsClient) {
+            // Fallback to demo mode for health check
+            const demoTTS = require('./text-to-speech-demo');
+            return demoTTS(req, res);
+        }
+        
         return res.json({
             success: true,
             message: 'Google Cloud Text-to-Speech API is working',
             version: '1.0.0',
+            mode: 'Production Mode',
             supportedLanguages: {
                 'vi-VN': 'Vietnamese',
                 'en-US': 'English (US)',
@@ -52,7 +59,7 @@ module.exports = async (req, res) => {
                 'ko-KR': 'Korean'
             },
             features: ['Multiple voices', 'Speed control', 'High quality audio', 'MP3 output'],
-            status: ttsClient ? 'Connected' : 'Not configured',
+            status: 'Connected',
             timestamp: new Date().toISOString()
         });
     }
@@ -77,11 +84,13 @@ module.exports = async (req, res) => {
                 });
             }
 
+            // Auto-fallback to demo mode if Google Cloud TTS not configured
             if (!ttsClient) {
-                return res.status(500).json({
-                    success: false,
-                    error: 'Google Cloud TTS not configured. Please set GOOGLE_CLOUD_KEY_JSON environment variable.'
-                });
+                console.log('⚠️ Google Cloud TTS not configured, falling back to demo mode...');
+                
+                // Import and use demo TTS
+                const demoTTS = require('./text-to-speech-demo');
+                return demoTTS(req, res);
             }
 
             console.log(`🎤 Processing TTS request: ${text.length} chars, ${language}, ${voice}`);
