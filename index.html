@@ -192,6 +192,7 @@
             <a class="list-group-item list-group-item-action" data-feature="ai-write"><i class="fas fa-edit me-2"></i>AI viết bài tự động</a>
             <a class="list-group-item list-group-item-action" data-feature="spell-check"><i class="fas fa-spell-check me-2 text-success"></i>Kiểm tra lỗi chính tả</a>
             <a class="list-group-item list-group-item-action" data-feature="hot-topics"><i class="fas fa-fire me-2"></i>Gợi ý chủ đề HOT</a>
+            <a class="list-group-item list-group-item-action" data-feature="content-summary"><i class="fas fa-compress-alt me-2"></i>Tóm tắt nội dung</a>
             <a class="list-group-item list-group-item-action" data-feature="tts"><i class="fas fa-volume-up me-2"></i>Text to Speech</a>
             <a class="list-group-item list-group-item-action" data-feature="stt"><i class="fas fa-microphone me-2"></i>Speech to Text</a>
             <a class="list-group-item list-group-item-action" data-feature="translate-en-vi"><i class="fas fa-language me-2 text-success"></i>Dịch Anh sang Việt</a>
@@ -1298,6 +1299,151 @@
 
                     // Initialize Hot Topics functionality
                     initializeHotTopicsFeature();
+                } else if (feature === 'content-summary') {
+                    content.innerHTML = `
+                        <h2><i class="fas fa-compress-alt me-2 text-info"></i>Tóm Tắt Nội Dung</h2>
+                        <div class="card">
+                            <div class="card-body">
+                                <!-- Summary Mode Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold"><i class="fas fa-bullseye me-2"></i>Loại tóm tắt:</label>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="summaryMode" id="categorySummary" value="category" checked>
+                                                <label class="form-check-label" for="categorySummary">
+                                                    <i class="fas fa-newspaper me-1"></i> Tóm tắt chuyên mục báo
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="summaryMode" id="articleSummary" value="article">
+                                                <label class="form-check-label" for="articleSummary">
+                                                    <i class="fas fa-file-alt me-1"></i> Tóm tắt bài viết
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Category Summary Input -->
+                                <div id="categoryInput" class="summary-input-section">
+                                    <div class="mb-3">
+                                        <label for="categoryUrl" class="form-label"><i class="fas fa-link me-2"></i>URL chuyên mục báo:</label>
+                                        <input type="url" class="form-control" id="categoryUrl" placeholder="https://vnexpress.net/thoi-su hoặc https://tuoitre.vn/thoi-su.htm">
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Paste đường dẫn chuyên mục của báo (VD: Thời sự, Kinh doanh, Thể thao...) để tóm tắt tất cả bài trong ngày
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="categorySettings" class="form-label"><i class="fas fa-cog me-2"></i>Tùy chọn tóm tắt:</label>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <select id="categoryLength" class="form-select form-select-sm">
+                                                    <option value="short">Tóm tắt ngắn (200-300 từ)</option>
+                                                    <option value="medium" selected>Tóm tắt vừa (400-600 từ)</option>
+                                                    <option value="long">Tóm tắt chi tiết (800-1000 từ)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <select id="categoryFocus" class="form-select form-select-sm">
+                                                    <option value="general">Tổng quan</option>
+                                                    <option value="highlights">Điểm nổi bật</option>
+                                                    <option value="analysis">Phân tích sâu</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="number" class="form-control form-control-sm" id="maxArticles" value="10" min="5" max="30" placeholder="Max bài">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Article Summary Input -->
+                                <div id="articleInput" class="summary-input-section" style="display: none;">
+                                    <div class="mb-3">
+                                        <label for="articleUrl" class="form-label"><i class="fas fa-link me-2"></i>URL bài viết:</label>
+                                        <input type="url" class="form-control" id="articleUrl" placeholder="https://vnexpress.net/... hoặc https://dantri.com.vn/...">
+                                        <div class="form-text">
+                                            <i class="fas fa-info-circle me-1"></i>
+                                            Paste đường dẫn bài báo bất kỳ để tóm tắt nội dung
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="articleSettings" class="form-label"><i class="fas fa-cog me-2"></i>Tùy chọn tóm tắt:</label>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <select id="articleLength" class="form-select form-select-sm">
+                                                    <option value="brief">Tóm tắt siêu ngắn (50-100 từ)</option>
+                                                    <option value="short" selected>Tóm tắt ngắn (150-250 từ)</option>
+                                                    <option value="medium">Tóm tắt vừa (300-400 từ)</option>
+                                                    <option value="detailed">Tóm tắt chi tiết (500+ từ)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <select id="articleStyle" class="form-select form-select-sm">
+                                                    <option value="bullet">Dạng bullet points</option>
+                                                    <option value="paragraph" selected>Dạng đoạn văn</option>
+                                                    <option value="structured">Dạng có cấu trúc</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Generate Summary Button -->
+                                <div class="text-center mb-4">
+                                    <button id="generateSummaryBtn" class="btn btn-info btn-lg">
+                                        <i class="fas fa-magic me-2"></i>Tạo Tóm Tắt
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Results Section -->
+                        <div class="mt-4" id="summaryResults" style="display: none;">
+                            <div class="card">
+                                <div class="card-header bg-info text-white">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h5 class="mb-0"><i class="fas fa-file-text me-2"></i>Kết Quả Tóm Tắt</h5>
+                                        <div>
+                                            <button class="btn btn-light btn-sm me-2" onclick="copyContent('summaryContent')">
+                                                <i class="fas fa-copy me-1"></i>Copy
+                                            </button>
+                                            <button class="btn btn-warning btn-sm" id="textToSpeechBtn" onclick="sendToTTS()">
+                                                <i class="fas fa-volume-up me-1"></i>Text to Speech
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Source Info -->
+                                    <div id="sourceInfo" class="alert alert-light mb-3">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <small class="text-muted"><strong>Nguồn:</strong> <span id="sourceUrl">-</span></small>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <small class="text-muted"><strong>Loại:</strong> <span id="sourceType">-</span></small>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <small class="text-muted"><strong>Thời gian:</strong> <span id="summaryTime">-</span></small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Summary Content -->
+                                    <div id="summaryContent" class="content-output">
+                                        <!-- Summary will be populated here -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Initialize Content Summary functionality
+                    initializeContentSummaryFeature();
                 } else {
                     content.innerHTML = `<h2>${this.textContent}</h2><p>Đang phát triển tính năng: ${feature}. Nội dung sẽ được thêm sau.</p>`;
                 }
@@ -2315,6 +2461,167 @@
             
             btn.innerHTML = originalText;
             btn.disabled = false;
+        };
+
+        // Initialize Content Summary Feature
+        function initializeContentSummaryFeature() {
+            console.log('Initializing Content Summary feature...');
+            
+            // Mode switching
+            document.querySelectorAll('input[name="summaryMode"]').forEach(radio => {
+                radio.addEventListener('change', function() {
+                    console.log('Summary mode changed to:', this.value);
+                    
+                    // Hide all input sections
+                    document.querySelectorAll('.summary-input-section').forEach(section => {
+                        section.style.display = 'none';
+                    });
+                    
+                    // Show appropriate section
+                    if (this.value === 'category') {
+                        document.getElementById('categoryInput').style.display = 'block';
+                    } else if (this.value === 'article') {
+                        document.getElementById('articleInput').style.display = 'block';
+                    }
+                });
+            });
+
+            // Generate Summary button
+            document.getElementById('generateSummaryBtn').addEventListener('click', async function() {
+                const btn = this;
+                const originalText = btn.innerHTML;
+                
+                try {
+                    // Get selected mode
+                    const summaryMode = document.querySelector('input[name="summaryMode"]:checked').value;
+                    console.log('Generating summary for mode:', summaryMode);
+                    
+                    let url, settings = {};
+                    
+                    if (summaryMode === 'category') {
+                        url = document.getElementById('categoryUrl').value.trim();
+                        if (!url) {
+                            alert('Vui lòng nhập URL chuyên mục!');
+                            return;
+                        }
+                        
+                        settings = {
+                            length: document.getElementById('categoryLength').value,
+                            focus: document.getElementById('categoryFocus').value,
+                            maxArticles: parseInt(document.getElementById('maxArticles').value)
+                        };
+                    } else if (summaryMode === 'article') {
+                        url = document.getElementById('articleUrl').value.trim();
+                        if (!url) {
+                            alert('Vui lòng nhập URL bài viết!');
+                            return;
+                        }
+                        
+                        settings = {
+                            length: document.getElementById('articleLength').value,
+                            style: document.getElementById('articleStyle').value
+                        };
+                    }
+                    
+                    // Update button state
+                    btn.disabled = true;
+                    btn.innerHTML = '⏳ Đang tóm tắt...';
+                    
+                    // Call API
+                    const response = await fetch('/api/content-summary', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            mode: summaryMode,
+                            url: url,
+                            settings: settings
+                        })
+                    });
+
+                    if (!response.ok) {
+                        const error = await response.json();
+                        throw new Error(error.error || 'API Error: ' + response.status);
+                    }
+
+                    const result = await response.json();
+                    console.log('Summary result:', result);
+                    
+                    // Display results
+                    displaySummaryResults(result, summaryMode, url);
+
+                } catch (error) {
+                    console.error('Content Summary Error:', error);
+                    alert('Lỗi khi tóm tắt: ' + error.message);
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalText;
+                }
+            });
+        }
+
+        // Display Summary Results
+        function displaySummaryResults(result, mode, url) {
+            const resultsSection = document.getElementById('summaryResults');
+            const sourceInfo = document.getElementById('sourceInfo');
+            const summaryContent = document.getElementById('summaryContent');
+            
+            // Update source info
+            document.getElementById('sourceUrl').textContent = url;
+            document.getElementById('sourceType').textContent = mode === 'category' ? 'Chuyên mục báo' : 'Bài viết đơn lẻ';
+            document.getElementById('summaryTime').textContent = new Date().toLocaleString('vi-VN');
+            
+            // Format and display summary content
+            let formattedContent = '';
+            if (result.summary) {
+                formattedContent = formatContent(result.summary);
+            } else if (result.content) {
+                formattedContent = formatContent(result.content);
+            } else {
+                formattedContent = '<p class="text-muted">Không có nội dung tóm tắt.</p>';
+            }
+            
+            summaryContent.innerHTML = formattedContent;
+            
+            // Store content globally for TTS
+            window.currentSummaryContent = result.summary || result.content || '';
+            window.currentSummaryUrl = url;
+            
+            // Show results
+            resultsSection.style.display = 'block';
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+            
+            console.log('Summary displayed successfully');
+        }
+
+        // Send to Text to Speech
+        window.sendToTTS = function() {
+            if (!window.currentSummaryContent) {
+                alert('Không có nội dung tóm tắt để chuyển sang TTS!');
+                return;
+            }
+            
+            console.log('Sending content to TTS:', window.currentSummaryContent);
+            
+            // Switch to TTS feature
+            const ttsBtn = document.querySelector('[data-feature="tts"]');
+            if (ttsBtn) {
+                ttsBtn.click();
+                
+                // Wait for TTS UI to load then populate content
+                setTimeout(() => {
+                    const ttsTextarea = document.getElementById('ttsText');
+                    if (ttsTextarea) {
+                        ttsTextarea.value = window.currentSummaryContent;
+                        alert('✅ Đã chuyển nội dung tóm tắt sang Text to Speech!');
+                    } else {
+                        // TTS feature not yet implemented
+                        alert('🔊 Tính năng Text to Speech sẽ được phát triển sau.\n\nNội dung đã được copy để chuẩn bị:\n\n' + 
+                              window.currentSummaryContent.substring(0, 200) + '...');
+                    }
+                }, 500);
+            } else {
+                alert('Không tìm thấy tính năng Text to Speech!');
+            }
         };
     </script>
 </body>
