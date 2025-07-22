@@ -1,69 +1,39 @@
 module.exports = async (req, res) => {
-  console.log('🚀 Content Summary API v5-FINAL: Request received', {
-    method: req.method,
-    query: req.query,
-    hasBody: !!req.body,
-    url: req.url,
-    timestamp: new Date().toISOString()
-  });
-  
-  // Add CORS headers for better compatibility  
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  // Handle different request types
-  if (req.method === 'OPTIONS') {
-    console.log('Handling OPTIONS request');
-    return res.status(200).end();
-  }
-  
-  // Health check response (GET or POST)
-  if (req.query.test === 'health') {
-    console.log('Handling health check');
+  // Simple health check for GET requests
+  if (req.method === 'GET' && req.query.test === 'health') {
     return res.json({ 
       success: true, 
-      message: "Content Summary API v5 is healthy!",
-      timestamp: new Date().toISOString(),
-      method: req.method
+      message: "Content Summary API v6-SIMPLE is healthy!",
+      timestamp: new Date().toISOString()
     });
   }
   
-  // Debug endpoint to see what we're receiving
-  if (req.query.debug === 'true') {
-    console.log('Debug request received');
+  // Debug endpoint  
+  if (req.method === 'GET' && req.query.debug === 'true') {
     return res.json({
       success: true,
       debug: {
         method: req.method,
         query: req.query,
         body: req.body,
-        headers: Object.keys(req.headers || {}),
         url: req.url
       }
     });
   }
   
-  // Only POST is allowed for actual summarization
+  // Only POST allowed for summarization (like other working APIs)
   if (req.method !== 'POST') {
-    console.log('Invalid method:', req.method);
-    return res.status(405).json({ error: 'Method not allowed. Use POST for summarization.' });
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
-    console.log('🚀 Content Summary API v3: Request received', {
-      method: req.method,
-      body: req.body ? Object.keys(req.body) : 'no body',
-      url: req.url
-    });
-    
     const { mode, url, settings } = req.body;
 
     if (!url) {
       return res.status(400).json({ error: 'URL is required' });
     }
 
-    console.log(`🚀 Content Summary API v4-FINAL: ${mode} mode for ${url}`);
+    console.log(`Content Summary: ${mode} mode for ${url}`);
 
     let summary;
     if (mode === 'category') {
@@ -84,26 +54,9 @@ module.exports = async (req, res) => {
 
   } catch (error) {
     console.error('Content Summary Error:', error);
-    
-    // Enhanced error messaging based on error type
-    let userMessage = 'Failed to summarize content';
-    let statusCode = 500;
-    
-    if (error.message.includes('Không tìm thấy bài báo nào')) {
-      userMessage = error.message; // Use the detailed message we crafted
-      statusCode = 404;
-    } else if (error.message.includes('timeout') || error.message.includes('TIMEOUT')) {
-      userMessage = 'Timeout: Trang web phản hồi chậm. Hãy thử lại với URL khác hoặc chờ vài phút.';
-      statusCode = 408;
-    } else if (error.message.includes('navigation') || error.message.includes('ERR_NAME_NOT_RESOLVED')) {
-      userMessage = 'Lỗi truy cập: URL không tồn tại hoặc trang web chặn truy cập. Kiểm tra lại URL.';
-      statusCode = 400;
-    }
-    
-    res.status(statusCode).json({ 
-      error: userMessage, 
-      details: error.message,
-      url: req.body.url || 'unknown'
+    res.status(500).json({ 
+      error: 'Failed to summarize content', 
+      details: error.message 
     });
   }
 }

@@ -1,0 +1,13 @@
+{
+  "functions": {
+    "api/content-summary.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/content-summary",
+      "destination": "/api/content-summary.js"
+    }
+  ]
+} 
