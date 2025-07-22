@@ -3238,7 +3238,7 @@
                         }
                     } else {
                         const errorText = await testResponse.text();
-                        throw new Error(\`HTTP \${testResponse.status}: \${errorText.substring(0, 100)}...\`);
+                        throw new Error(`HTTP ${testResponse.status}: ${errorText.substring(0, 100)}...`);
                     }
                     
                 } catch (error) {
@@ -3291,7 +3291,7 @@
                     ];
                     
                     for (const test of voiceTests) {
-                        console.log(\`Testing voice: \${test.voice}\`);
+                        console.log(`Testing voice: ${test.voice}`);
                         
                         const response = await fetch('/api/text-to-speech', {
                             method: 'POST',
@@ -3305,7 +3305,7 @@
                             })
                         });
                         
-                        console.log(\`Voice \${test.voice} response:\`, {
+                        console.log(`Voice ${test.voice} response:`, {
                             status: response.status,
                             statusText: response.statusText,
                             headers: Object.fromEntries(response.headers.entries())
@@ -3313,10 +3313,10 @@
                         
                         if (response.ok) {
                             const data = await response.json();
-                            console.log(\`Voice \${test.voice} data:\`, data);
+                            console.log(`Voice ${test.voice} data:`, data);
                         } else {
                             const errorText = await response.text();
-                            console.error(\`Voice \${test.voice} error:\`, errorText);
+                            console.error(`Voice ${test.voice} error:`, errorText);
                         }
                     }
                     
@@ -3326,19 +3326,19 @@
                     // Show debug results
                     const debugAlert = document.createElement('div');
                     debugAlert.className = 'alert alert-info alert-dismissible fade show mt-3';
-                    debugAlert.innerHTML = \`
+                    debugAlert.innerHTML = `
                         🔍 <strong>Debug hoàn tất!</strong><br>
                         <small>Xem Console (F12) để xem chi tiết debug logs.<br>
                         Đã test multiple voices và configurations.</small>
                         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    \`;
+                    `;
                     document.querySelector('#tts .card-body').appendChild(debugAlert);
                     
                     setTimeout(() => debugAlert.remove(), 10000);
                     
                 } catch (error) {
                     console.error('❌ Debug Error:', error);
-                    statusSpan.innerHTML = \`❌ Debug Error: \${error.message}\`;
+                    statusSpan.innerHTML = `❌ Debug Error: ${error.message}`;
                     statusSpan.className = 'text-danger fw-bold';
                 }
             });
