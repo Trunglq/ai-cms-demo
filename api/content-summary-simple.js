@@ -26,7 +26,7 @@ module.exports = async (req, res) => {
     return res.json({ 
       success: true, 
       message: 'Enhanced Content Summary API is working',
-      version: '2.2-MarketFixed',
+      version: '2.3-LawFixed',
       supportedSites: ['VnEconomy', 'DanTri', 'VietnamNet', 'VnExpress', 'TuoiTre', 'ThanhNien', 'Zing', '24h'],
       lastUpdated: new Date().toLocaleString('vi-VN', {timeZone: 'Asia/Ho_Chi_Minh'}),
       debug: req.query.debug === 'true' ? { 
@@ -243,14 +243,44 @@ function generateRealisticHeadlines(url, maxArticles = 8) {
         'Bóng đá Việt Nam: Đội tuyển chuẩn bị cho Asian Cup 2024 tại Qatar',
         'Tennis: Lý Hoàng Nam vào vòng 2 giải ATP 250 tại Singapore',
         'SEA Games 32: Đoàn thể thao Việt Nam đặt mục tiêu top 3',
-        'V-League 2024: Hà Nội FC dẫn đầu bảng sau vòng 25'
+        'V-League 2024: Hà Nội FC dẫn đầu bảng sau vòng 25',
+        'Bóng chuyền nữ Việt Nam vô địch SEA Games lần thứ 7 liên tiếp',
+        'Cầu lông: Nguyễn Thuỳ Linh vào tứ kết giải All England',
+        'Bơi lội: Nguyễn Huy Hoàng phá kỷ lục quốc gia ở cự ly 1500m tự do',
+        'Marathon quốc tế TP.HCM 2025 thu hút 15,000 vận động viên tham gia'
+      );
+    } else if (category === 'law') {
+      // TuoiTre Law category - based on real current content
+      headlines.push(
+        'Công an TP.HCM bắt nam thanh niên giật hơn 100 tờ vé số của người khuyết tật',
+        'Thanh niên 18 tuổi ở Hà Nội bị lừa dàn cảnh bắt cóc giả',
+        'Bạn tin tưởng giao mật khẩu két sắt, thanh niên Hàn Quốc cuỗm luôn 2,5 tỉ đồng',
+        'Vay hơn 1 tỉ "nướng" vào web đỏ đen, người phụ nữ bị bắt tạm giam',
+        'Từ chiếc xe máy không biển số, công an bóc trần nhóm trộm xe liên tỉnh',
+        '3 giờ nghẹt thở giải cứu cô gái bị thanh niên dùng dao khống chế trên taxi',
+        'Thuốc bị buộc tiêu hủy của Công ty CP Dược trung ương 3 đã lọt ra ngoài như thế nào',
+        'Tiếp nhận 161 "cán bộ" điện lực, thuế giả mạo từ Campuchia, sàng lọc để làm rõ xử lý',
+        'Tổng giám đốc bỏ trốn sang Mỹ, căn cứ nào để viện kiểm sát buộc tội chủ mưu',
+        'Tưởng đang "thay trời hành đạo", nhóm "bà chủ" truy hỏi, cưỡng đoạt tiền nhân viên',
+        'Mẹ ruột xin giấy xác nhận độc thân cho con gái ở nước ngoài được không',
+        'Mua đất bằng giấy tay, đóng thuế đầy đủ, có thể làm sổ đỏ không',
+        'Đang nuôi con nhỏ, công ty vẫn bắt tăng ca vào ban đêm có vi phạm không',
+        'Nhiều điều cần làm rõ ở phiên xử vụ thầy giáo - võ sư giết người',
+        'Giấu hàng trăm kg bạc trong xe container từ Trung Quốc vào Việt Nam',
+        'Từ vụ ông Trịnh Văn Quyết: Nộp ngàn tỉ khắc phục, được giảm án có giảm tính răn đe',
+        'Khởi tố vụ án lừa đảo chiếm đoạt tài sản qua mạng xã hội tại Hà Nội',
+        'Bắt nhóm đối tượng chuyên trộm cắp xe máy rồi đem bán sang Campuchia'
       );
     } else {
       headlines.push(
         'Du lịch Việt Nam: Đón 12.6 triệu lượt khách quốc tế trong 11 tháng',
         'Văn hóa: Khai mạc lễ hội áo dài tại TP.HCM với 500 người mẫu tham gia',
         'Ẩm thực: Phở Việt Nam được UNESCO công nhận di sản văn hóa',
-        'Giải trí: Concert Blackpink tại Hà Nội thu hút 45,000 khán giả'
+        'Giải trí: Concert Blackpink tại Hà Nội thu hút 45,000 khán giả',
+        'Giáo dục: Bộ GD&ĐT công bố phương án tuyển sinh đại học 2025',
+        'Y tế: Triển khai chiến dịch tiêm vaccine phòng cúm mùa trên toàn quốc',
+        'Môi trường: Hà Nội thí điểm mô hình xử lý rác thải bằng công nghệ mới',
+        'Công nghệ: Ứng dụng AI trong giảng dạy tại các trường đại học Việt Nam'
       );
     }
   } else if (hostname.includes('vietnamnet.vn')) {
@@ -406,6 +436,9 @@ async function generateNewsSummary(headlines, settings) {
       'social': 'Xã hội & Đời sống', 
       'tech': 'Công nghệ & Khoa học',
       'sports': 'Thể thao & Giải trí',
+      'law': 'Pháp luật & An ninh',
+      'market': 'Thị trường & Xuất nhập khẩu',
+      'health': 'Y tế & Sức khỏe',
       'general': 'Tổng hợp'
     };
     
@@ -449,9 +482,11 @@ YÊU CẦU CHUYÊN MÔN:
     console.error('AI Summary Error:', error);
     // Enhanced fallback summary
     const topHeadlines = headlines.slice(0, 5);
-    const categories = [...new Set(headlines.map(h => h.title.includes('kinh tế') || h.title.includes('tài chính') ? 'Kinh tế' : 
+         const categories = [...new Set(headlines.map(h => h.title.includes('kinh tế') || h.title.includes('tài chính') ? 'Kinh tế' : 
                                             h.title.includes('xã hội') || h.title.includes('giáo dục') ? 'Xã hội' : 
-                                            h.title.includes('thể thao') ? 'Thể thao' : 'Tổng hợp'))];
+                                            h.title.includes('thể thao') ? 'Thể thao' : 
+                                            h.title.includes('pháp luật') || h.title.includes('công an') || h.title.includes('bắt') || h.title.includes('lừa đảo') ? 'Pháp luật' :
+                                            h.title.includes('thị trường') || h.title.includes('xuất khẩu') ? 'Thị trường' : 'Tổng hợp'))];
 
     return `📰 ĐIỂM TIN NHANH (${headlines.length} tin)
 
