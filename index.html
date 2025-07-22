@@ -116,6 +116,35 @@
             -webkit-box-orient: vertical;
             overflow: hidden;
         }
+        .hot-topic-card-main {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #dee2e6;
+        }
+        .hot-topic-card-main:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #0d6efd;
+        }
+        .hot-topic-card-main .card-title {
+            font-size: 15px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 10px;
+            color: #212529;
+        }
+        .hot-topic-card-main .card-text {
+            font-size: 13px;
+            line-height: 1.4;
+            color: #6c757d;
+        }
+        .progress-bar-animated {
+            animation: progress-bar-stripes 1s linear infinite;
+        }
+        @keyframes progress-bar-stripes {
+            0% { background-position: 1rem 0; }
+            100% { background-position: 0 0; }
+        }
     </style>
 </head>
 <body>
@@ -833,32 +862,29 @@
                                                 <label for="categoryFilter" class="form-label small"><i class="fas fa-folder me-1"></i>Chuyên mục:</label>
                                                 <select id="categoryFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả chuyên mục</option>
-                                                    <option value="Thể thao">🏈 Thể thao</option>
-                                                    <option value="Kinh tế">💰 Kinh tế</option>
-                                                    <option value="Xã hội">👥 Xã hội</option>
-                                                    <option value="Công nghệ">🔬 Công nghệ</option>
-                                                    <option value="Giáo dục">🎓 Giáo dục</option>
-                                                    <option value="Chứng khoán">📈 Chứng khoán</option>
-                                                    <option value="Crypto">₿ Cryptocurrency</option>
-                                                    <option value="Văn hóa">🎭 Văn hóa</option>
+                                                    <option value="Kinh tế">Kinh tế</option>
+                                                    <option value="Công nghệ">Công nghệ</option>
+                                                    <option value="Xã hội">Xã hội</option>
+                                                    <option value="Văn hóa">Văn hóa</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label small"><i class="fas fa-chart-line me-1"></i>Trend Score:</label>
                                                 <select id="scoreFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả mức độ</option>
-                                                    <option value="90">🔥 Siêu Hot (90%+)</option>
-                                                    <option value="80">🌟 Hot (80%+)</option>
-                                                    <option value="70">📈 Trending (70%+)</option>
+                                                    <option value="90">Siêu Hot (90%+)</option>
+                                                    <option value="80">Hot (80%+)</option>
+                                                    <option value="70">Trending (70%+)</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label small"><i class="fas fa-rss me-1"></i>Nguồn:</label>
                                                 <select id="sourceFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả nguồn</option>
-                                                    <option value="google-trends">🔍 Google Trends</option>
-                                                    <option value="baomoi">📰 Baomoi.com</option>
-                                                    <option value="social-media">📱 Social Media</option>
+                                                    <option value="Current Events">Current Events</option>
+                                                    <option value="Tech Trends">Tech Trends</option>
+                                                    <option value="Vietnamese">Vietnamese Topics</option>
+                                                    <option value="Fallback">General Topics</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -1006,6 +1032,222 @@
 
                     // AI Writing Logic
                     setupAIWritingFeature();
+                } else if (feature === 'hot-topics') {
+                    content.innerHTML = `
+                        <h2><i class="fas fa-fire me-2 text-danger"></i>Gợi Ý Chủ Đề HOT</h2>
+                        <div class="card">
+                            <div class="card-body">
+                                <!-- Source Selection -->
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold"><i class="fas fa-database me-2"></i>Nguồn dữ liệu:</label>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="sourceAll" value="all" checked>
+                                                <label class="form-check-label" for="sourceAll">
+                                                    <i class="fas fa-globe me-1"></i> Tất cả nguồn
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="sourceGoogle" value="google" checked>
+                                                <label class="form-check-label" for="sourceGoogle">
+                                                    <i class="fab fa-google me-1"></i> Google Trends
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="sourceBaoMoi" value="baomoi" checked>
+                                                <label class="form-check-label" for="sourceBaoMoi">
+                                                    <i class="fas fa-newspaper me-1"></i> BaoMoi.com
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="sourceSocial" value="social" checked>
+                                                <label class="form-check-label" for="sourceSocial">
+                                                    <i class="fas fa-share-alt me-1"></i> Mạng xã hội
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="sourceNews" value="news" checked>
+                                                <label class="form-check-label" for="sourceNews">
+                                                    <i class="fas fa-tv me-1"></i> Báo chí VN
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Category Filter -->
+                                <div class="mb-4">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <label for="categoryFilterMain" class="form-label fw-bold"><i class="fas fa-tags me-2"></i>Chuyên mục:</label>
+                                            <select id="categoryFilterMain" class="form-select">
+                                                <option value="all">Tất cả chuyên mục</option>
+                                                <option value="Kinh tế">Kinh tế</option>
+                                                <option value="Công nghệ">Công nghệ</option>
+                                                <option value="Xã hội">Xã hội</option>
+                                                <option value="Thể thao">Thể thao</option>
+                                                <option value="Giáo dục">Giáo dục</option>
+                                                <option value="Chứng khoán">Chứng khoán</option>
+                                                <option value="Crypto">Crypto</option>
+                                                <option value="Văn hóa">Văn hóa</option>
+                                                <option value="Du lịch">Du lịch</option>
+                                                <option value="Sức khỏe">Sức khỏe</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <label for="hotLevelFilter" class="form-label fw-bold"><i class="fas fa-thermometer-half me-2"></i>Độ Hot:</label>
+                                            <select id="hotLevelFilter" class="form-select">
+                                                <option value="all">Tất cả mức độ</option>
+                                                <option value="95">Siêu Hot (95%+)</option>
+                                                <option value="85">Very Hot (85%+)</option>
+                                                <option value="75">Hot (75%+)</option>
+                                                <option value="65">Trending (65%+)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Control Buttons -->
+                                <div class="text-center mb-4">
+                                    <button id="loadHotTopicsMainBtn" class="btn btn-primary me-3">
+                                        <i class="fas fa-sync-alt me-2"></i>Tải Chủ Đề HOT
+                                    </button>
+                                    <button id="refreshSourcesBtn" class="btn btn-outline-secondary">
+                                        <i class="fas fa-redo me-2"></i>Làm mới nguồn
+                                    </button>
+                                </div>
+
+                                <!-- Loading State -->
+                                <div id="hotTopicsMainLoading" class="text-center py-4" style="display: none;">
+                                    <div class="spinner-border text-danger" role="status">
+                                        <span class="visually-hidden">Đang tải...</span>
+                                    </div>
+                                    <h5 class="mt-3 text-danger">Đang quét chủ đề HOT...</h5>
+                                    <div class="progress mt-3" style="max-width: 400px; margin: 0 auto;">
+                                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-danger" id="loadingProgress" style="width: 0%"></div>
+                                    </div>
+                                    <small class="text-muted mt-2 d-block" id="loadingStatus">Khởi tạo...</small>
+                                </div>
+
+                                <!-- Statistics -->
+                                <div id="hotTopicsStats" class="row mb-4" style="display: none;">
+                                    <div class="col-md-3">
+                                        <div class="card bg-danger text-white text-center">
+                                            <div class="card-body">
+                                                <h3 class="mb-0" id="totalTopicsCount">0</h3>
+                                                <small>Tổng chủ đề</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-warning text-white text-center">
+                                            <div class="card-body">
+                                                <h3 class="mb-0" id="superHotCount">0</h3>
+                                                <small>Siêu Hot (90%+)</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-info text-white text-center">
+                                            <div class="card-body">
+                                                <h3 class="mb-0" id="sourcesCount">0</h3>
+                                                <small>Nguồn dữ liệu</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="card bg-success text-white text-center">
+                                            <div class="card-body">
+                                                <h3 class="mb-0" id="categoriesCount">0</h3>
+                                                <small>Chuyên mục</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Hot Topics Results -->
+                                <div id="hotTopicsMainResults" style="display: none;">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h4><i class="fas fa-fire me-2 text-danger"></i>Chủ đề HOT hiện tại</h4>
+                                        <small class="text-muted">Cập nhật: <span id="lastUpdateTime">--</span></small>
+                                    </div>
+                                    <div id="hotTopicsMainGrid" class="row">
+                                        <!-- Topics will be populated here -->
+                                    </div>
+                                </div>
+
+                                <!-- Empty State -->
+                                <div id="hotTopicsEmpty" class="text-center py-5" style="display: none;">
+                                    <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                                    <h4 class="text-muted">Chưa có chủ đề nào</h4>
+                                    <p class="text-muted">Hãy chọn nguồn dữ liệu và nhấn "Tải Chủ Đề HOT" để bắt đầu</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Topic Detail Modal -->
+                        <div class="modal fade" id="topicDetailModal" tabindex="-1">
+                            <div class="modal-dialog modal-lg">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="modalTopicTitle">Chi tiết chủ đề</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row">
+                                            <div class="col-md-8">
+                                                <p id="modalTopicDescription" class="lead"></p>
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="fas fa-lightbulb me-2"></i>Gợi ý góc độ viết:</label>
+                                                    <ul id="modalWritingAngles" class="list-unstyled">
+                                                        <!-- Writing angles will be populated -->
+                                                    </ul>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label"><i class="fas fa-search me-2"></i>Từ khóa liên quan:</label>
+                                                    <div id="modalKeywords">
+                                                        <!-- Keywords will be populated -->
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card bg-light">
+                                                    <div class="card-body">
+                                                        <h6><i class="fas fa-info-circle me-1"></i>Thông tin:</h6>
+                                                        <p class="mb-1"><strong>Chuyên mục:</strong> <span id="modalTopicCategory"></span></p>
+                                                        <p class="mb-1"><strong>Độ Hot:</strong> <span id="modalTopicScore" class="badge bg-danger"></span></p>
+                                                        <p class="mb-1"><strong>Nguồn:</strong> <span id="modalTopicSource"></span></p>
+                                                        <p class="mb-1"><strong>Thời gian:</strong> <span id="modalTopicTime"></span></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-primary" id="useTopicForWriting">
+                                            <i class="fas fa-edit me-2"></i>Dùng viết bài
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" id="copyTopicInfo">
+                                            <i class="fas fa-copy me-2"></i>Copy thông tin
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    // Initialize Hot Topics functionality
+                    initializeHotTopicsFeature();
                 } else {
                     content.innerHTML = `<h2>${this.textContent}</h2><p>Đang phát triển tính năng: ${feature}. Nội dung sẽ được thêm sau.</p>`;
                 }
@@ -1189,21 +1431,7 @@
                 loadingDiv.style.display = 'block';
                 topicsList.innerHTML = '';
                 
-                // Get current filter values
-                const categoryFilter = document.getElementById('categoryFilter')?.value || 'all';
-                const sourceFilter = document.getElementById('sourceFilter')?.value || 'all';
-                
-                // Build query parameters
-                const params = new URLSearchParams();
-                if (categoryFilter !== 'all') params.append('category', categoryFilter);
-                if (sourceFilter !== 'all') params.append('source', sourceFilter);
-                
-                const queryString = params.toString();
-                const url = '/api/hot-topics' + (queryString ? '?' + queryString : '');
-                
-                console.log('Fetching from:', url);
-                
-                const response = await fetch(url, {
+                const response = await fetch('/api/hot-topics', {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -1213,7 +1441,6 @@
                 }
                 
                 const data = await response.json();
-                console.log('Hot topics data:', data);
                 
                 // Store all topics globally
                 window.allHotTopics = data.topics || [];
@@ -1222,7 +1449,12 @@
                 // Update filter options with counts
                 updateFilterOptions(data.categoryStats);
                 
-                // Display topics
+                // Reset filters
+                document.getElementById('categoryFilter').value = 'all';
+                document.getElementById('scoreFilter').value = 'all';
+                document.getElementById('sourceFilter').value = 'all';
+                
+                // Display all topics initially
                 displayHotTopics(window.allHotTopics);
                 
             } catch (error) {
@@ -1230,8 +1462,7 @@
                 topicsList.innerHTML = `
                     <div class="col-12">
                         <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-1"></i>Không thể tải chủ đề Hot từ ${sourceFilter === 'google-trends' ? 'Google Trends' : sourceFilter === 'baomoi' ? 'Baomoi.com' : sourceFilter === 'social-media' ? 'Social Media' : 'các nguồn'}. 
-                            <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Thử lại</button>
+                            <i class="fas fa-exclamation-triangle me-1"></i>Không thể tải chủ đề Hot. <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Thử lại</button>
                         </div>
                     </div>
                 `;
@@ -1240,10 +1471,42 @@
             }
         }
 
-        // Apply filters to hot topics - now reloads from API with filters
+        // Apply filters to hot topics
         function applyHotTopicsFilters() {
-            // Reload topics from API with current filters
-            loadHotTopics();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const scoreFilter = document.getElementById('scoreFilter').value;
+            const sourceFilter = document.getElementById('sourceFilter').value;
+            
+            let filteredTopics = [...window.allHotTopics];
+            
+            // Filter by category
+            if (categoryFilter !== 'all') {
+                filteredTopics = filteredTopics.filter(topic => 
+                    topic.category === categoryFilter
+                );
+            }
+            
+            // Filter by score
+            if (scoreFilter !== 'all') {
+                const minScore = parseInt(scoreFilter);
+                filteredTopics = filteredTopics.filter(topic => 
+                    topic.score >= minScore
+                );
+            }
+            
+            // Filter by source
+            if (sourceFilter !== 'all') {
+                filteredTopics = filteredTopics.filter(topic => {
+                    if (sourceFilter === 'Current Events') return topic.source === 'Current Events';
+                    if (sourceFilter === 'Tech Trends') return topic.source === 'Tech Trends';
+                    if (sourceFilter === 'Vietnamese') return topic.source.includes('Vietnamese');
+                    if (sourceFilter === 'Fallback') return topic.source === 'Fallback Topics';
+                    return true;
+                });
+            }
+            
+            // Display filtered topics
+            displayHotTopics(filteredTopics, true); // true indicates this is a filtered view
         }
 
         // Display hot topics in grid
@@ -1270,49 +1533,7 @@
             // Update topics counter
             updateTopicsCounter(topics.length, window.allHotTopics.length, isFiltered);
             
-                            const topicsHTML = topics.map((topic, index) => {
-                // Get source-specific badge and icon
-                let sourceBadge = '';
-                let sourceIcon = '';
-                if (topic.source === 'Google Trends') {
-                    sourceBadge = 'bg-primary';
-                    sourceIcon = '🔍';
-                } else if (topic.source === 'Baomoi.com') {
-                    sourceBadge = 'bg-success';
-                    sourceIcon = '📰';
-                } else if (topic.source === 'Social Media') {
-                    sourceBadge = 'bg-info';
-                    sourceIcon = '📱';
-                } else {
-                    sourceBadge = 'bg-secondary';
-                    sourceIcon = '📊';
-                }
-                
-                // Get category emoji
-                let categoryEmoji = '';
-                switch(topic.category) {
-                    case 'Thể thao': categoryEmoji = '🏈'; break;
-                    case 'Kinh tế': categoryEmoji = '💰'; break;
-                    case 'Xã hội': categoryEmoji = '👥'; break;
-                    case 'Công nghệ': categoryEmoji = '🔬'; break;
-                    case 'Giáo dục': categoryEmoji = '🎓'; break;
-                    case 'Chứng khoán': categoryEmoji = '📈'; break;
-                    case 'Crypto': categoryEmoji = '₿'; break;
-                    case 'Văn hóa': categoryEmoji = '🎭'; break;
-                    default: categoryEmoji = '📝'; break;
-                }
-                
-                // Extra info based on source
-                let extraInfo = '';
-                if (topic.readCount && topic.timeAgo) {
-                    extraInfo = `<small class="text-primary"><i class="fas fa-eye me-1"></i>${topic.readCount} • ${topic.timeAgo}</small>`;
-                } else if (topic.hashtags && topic.hashtags.length > 0) {
-                    extraInfo = `<small class="text-info"><i class="fab fa-twitter me-1"></i>${topic.hashtags.slice(0, 2).join(' ')}</small>`;
-                } else if (topic.keywords && topic.keywords.length > 0) {
-                    extraInfo = `<small class="text-warning"><i class="fas fa-search me-1"></i>Keywords: ${topic.keywords.slice(0, 2).join(', ')}</small>`;
-                }
-                
-                return `
+                            const topicsHTML = topics.map((topic, index) => `
                 <div class="col-md-6 mb-3">
                     <div class="card hot-topic-card h-100" 
                          data-title="${topic.title}"
@@ -1323,20 +1544,18 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <span class="badge bg-danger">#${index + 1}</span>
-                                <span class="badge ${sourceBadge}">${sourceIcon} ${topic.source}</span>
+                                <small class="text-muted">${topic.source}</small>
                             </div>
                             <h6 class="card-title">${topic.title}</h6>
                             <p class="card-text text-muted small">${topic.description}</p>
-                            <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex justify-content-between align-items-center">
                                 <small class="text-success"><i class="fas fa-fire me-1"></i>Trend: ${topic.score}%</small>
-                                <small class="text-muted">${categoryEmoji} ${topic.category}</small>
+                                <small class="text-muted">${topic.category}</small>
                             </div>
-                            ${extraInfo ? `<div class="mt-2">${extraInfo}</div>` : ''}
                         </div>
                     </div>
                 </div>
-            `;
-            }).join('');
+            `).join('');
             
             topicsList.innerHTML = topicsHTML;
         }
@@ -1416,14 +1635,10 @@
             // Reset to default options with counts
             categoryFilter.innerHTML = `
                 <option value="all">Tất cả chuyên mục (${stats.total || 0})</option>
-                <option value="Thể thao">🏈 Thể thao (${categories['Thể thao'] || 0})</option>
-                <option value="Kinh tế">💰 Kinh tế (${categories['Kinh tế'] || 0})</option>
-                <option value="Xã hội">👥 Xã hội (${categories['Xã hội'] || 0})</option>
-                <option value="Công nghệ">🔬 Công nghệ (${categories['Công nghệ'] || 0})</option>
-                <option value="Giáo dục">🎓 Giáo dục (${categories['Giáo dục'] || 0})</option>
-                <option value="Chứng khoán">📈 Chứng khoán (${categories['Chứng khoán'] || 0})</option>
-                <option value="Crypto">₿ Cryptocurrency (${categories['Crypto'] || 0})</option>
-                <option value="Văn hóa">🎭 Văn hóa (${categories['Văn hóa'] || 0})</option>
+                <option value="Kinh tế">Kinh tế (${categories['Kinh tế'] || 0})</option>
+                <option value="Công nghệ">Công nghệ (${categories['Công nghệ'] || 0})</option>
+                <option value="Xã hội">Xã hội (${categories['Xã hội'] || 0})</option>
+                <option value="Văn hóa">Văn hóa (${categories['Văn hóa'] || 0})</option>
             `;
             
             // Update score filter options
@@ -1431,23 +1646,25 @@
             const scoreRanges = stats.scoreRanges || {};
             scoreFilter.innerHTML = `
                 <option value="all">Tất cả mức độ (${stats.total || 0})</option>
-                <option value="90">🔥 Siêu Hot 90%+ (${scoreRanges.super_hot || 0})</option>
-                <option value="80">🌟 Hot 80%+ (${(scoreRanges.super_hot || 0) + (scoreRanges.hot || 0)})</option>
-                <option value="70">📈 Trending 70%+ (${stats.total || 0})</option>
+                <option value="90">Siêu Hot 90%+ (${scoreRanges.super_hot || 0})</option>
+                <option value="80">Hot 80%+ (${(scoreRanges.super_hot || 0) + (scoreRanges.hot || 0)})</option>
+                <option value="70">Trending 70%+ (${stats.total || 0})</option>
             `;
             
             // Update source filter options  
             const sourceFilter = document.getElementById('sourceFilter');
             const sources = stats.sources || {};
-            const googleTrends = sources['Google Trends'] || 0;
-            const baomoi = sources['Baomoi.com'] || 0;
-            const socialMedia = sources['Social Media'] || 0;
+            const currentEvents = sources['Current Events'] || 0;
+            const techTrends = sources['Tech Trends'] || 0;
+            const vietnamese = Object.keys(sources).filter(s => s.includes('Vietnamese')).reduce((sum, key) => sum + (sources[key] || 0), 0);
+            const fallback = sources['Fallback Topics'] || 0;
             
             sourceFilter.innerHTML = `
                 <option value="all">Tất cả nguồn (${stats.total || 0})</option>
-                <option value="google-trends">🔍 Google Trends (${googleTrends})</option>
-                <option value="baomoi">📰 Baomoi.com (${baomoi})</option>
-                <option value="social-media">📱 Social Media (${socialMedia})</option>
+                <option value="Current Events">Current Events (${currentEvents})</option>
+                <option value="Tech Trends">Tech Trends (${techTrends})</option>
+                <option value="Vietnamese">Vietnamese Topics (${vietnamese})</option>
+                <option value="Fallback">General Topics (${fallback})</option>
             `;
         }
 
@@ -1530,6 +1747,377 @@
         window.refineArticle = function() {
             // TODO: Implement article refinement functionality
             alert('Tính năng tinh chỉnh đang được phát triển!');
+        };
+
+        // Initialize Hot Topics Feature
+        function initializeHotTopicsFeature() {
+            // Global variables for hot topics
+            window.currentHotTopics = [];
+            window.filteredHotTopics = [];
+
+            // Source checkboxes management
+            document.getElementById('sourceAll').addEventListener('change', function() {
+                const isChecked = this.checked;
+                ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial', 'sourceNews'].forEach(id => {
+                    document.getElementById(id).checked = isChecked;
+                });
+            });
+
+            // Individual source checkboxes
+            ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial', 'sourceNews'].forEach(id => {
+                document.getElementById(id).addEventListener('change', function() {
+                    const allChecked = ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial', 'sourceNews']
+                        .every(sourceId => document.getElementById(sourceId).checked);
+                    document.getElementById('sourceAll').checked = allChecked;
+                });
+            });
+
+            // Load hot topics button
+            document.getElementById('loadHotTopicsMainBtn').addEventListener('click', loadMainHotTopics);
+            document.getElementById('refreshSourcesBtn').addEventListener('click', refreshHotTopicsSources);
+
+            // Filter change events
+            document.getElementById('categoryFilterMain').addEventListener('change', applyMainHotTopicsFilters);
+            document.getElementById('hotLevelFilter').addEventListener('change', applyMainHotTopicsFilters);
+
+            // Modal events
+            document.getElementById('useTopicForWriting').addEventListener('click', useTopicForAIWriting);
+            document.getElementById('copyTopicInfo').addEventListener('click', copyTopicInformation);
+        }
+
+        // Load hot topics with enhanced sources
+        async function loadMainHotTopics() {
+            const loadingDiv = document.getElementById('hotTopicsMainLoading');
+            const statsDiv = document.getElementById('hotTopicsStats');
+            const resultsDiv = document.getElementById('hotTopicsMainResults');
+            const emptyDiv = document.getElementById('hotTopicsEmpty');
+            const loadBtn = document.getElementById('loadHotTopicsMainBtn');
+
+            try {
+                // Show loading
+                loadingDiv.style.display = 'block';
+                statsDiv.style.display = 'none';
+                resultsDiv.style.display = 'none';
+                emptyDiv.style.display = 'none';
+                loadBtn.disabled = true;
+
+                // Simulate loading progress
+                const progressBar = document.getElementById('loadingProgress');
+                const statusText = document.getElementById('loadingStatus');
+                const sources = ['Google Trends', 'BaoMoi.com', 'Mạng xã hội', 'Báo chí VN'];
+                
+                for (let i = 0; i < sources.length; i++) {
+                    progressBar.style.width = `${(i + 1) * 25}%`;
+                    statusText.textContent = `Đang quét ${sources[i]}...`;
+                    await new Promise(resolve => setTimeout(resolve, 800));
+                }
+
+                // Get selected sources
+                const selectedSources = [];
+                if (document.getElementById('sourceGoogle').checked) selectedSources.push('google');
+                if (document.getElementById('sourceBaoMoi').checked) selectedSources.push('baomoi');
+                if (document.getElementById('sourceSocial').checked) selectedSources.push('social');
+                if (document.getElementById('sourceNews').checked) selectedSources.push('news');
+
+                // Call enhanced API
+                const response = await fetch(`/api/hot-topics?sources=${selectedSources.join(',')}`, {
+                    method: 'GET',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`API Error: ${response.status}`);
+                }
+
+                const data = await response.json();
+                
+                // Store data globally
+                window.currentHotTopics = data.topics || [];
+                window.filteredHotTopics = [...window.currentHotTopics];
+
+                // Update statistics
+                updateHotTopicsStatistics(data);
+
+                // Display topics
+                displayMainHotTopics(window.filteredHotTopics);
+
+                // Show results
+                loadingDiv.style.display = 'none';
+                if (window.currentHotTopics.length > 0) {
+                    statsDiv.style.display = 'block';
+                    resultsDiv.style.display = 'block';
+                    document.getElementById('lastUpdateTime').textContent = new Date().toLocaleString('vi-VN');
+                } else {
+                    emptyDiv.style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Hot Topics Error:', error);
+                loadingDiv.style.display = 'none';
+                emptyDiv.style.display = 'block';
+                alert('Không thể tải chủ đề Hot: ' + error.message);
+            } finally {
+                loadBtn.disabled = false;
+            }
+        }
+
+        // Display hot topics in enhanced grid
+        function displayMainHotTopics(topics) {
+            const grid = document.getElementById('hotTopicsMainGrid');
+            
+            if (!topics || topics.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-12">
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-search me-2"></i>Không tìm thấy chủ đề phù hợp với bộ lọc hiện tại
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            const topicsHTML = topics.map((topic, index) => `
+                <div class="col-lg-4 col-md-6 mb-4">
+                    <div class="card h-100 hot-topic-card-main shadow-sm" data-bs-toggle="modal" data-bs-target="#topicDetailModal" onclick="showTopicDetail(${index})">
+                        <div class="card-header bg-gradient text-white ${getScoreColor(topic.score)}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-light text-dark">#${topic.rank || index + 1}</span>
+                                <small><i class="fas fa-fire me-1"></i>${topic.score}%</small>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-title">${topic.title}</h6>
+                            <p class="card-text small text-muted">${topic.description.substring(0, 100)}...</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="badge bg-secondary">${topic.category}</span>
+                                <small class="text-muted">${topic.source}</small>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-transparent">
+                            <div class="d-flex justify-content-between">
+                                <button class="btn btn-sm btn-outline-primary flex-fill me-2" onclick="event.stopPropagation(); quickUseForWriting('${topic.title}', '${topic.description}')">
+                                    <i class="fas fa-edit me-1"></i>Viết bài
+                                </button>
+                                <button class="btn btn-sm btn-outline-secondary" onclick="event.stopPropagation(); quickCopyTopic('${topic.title}')">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+
+            grid.innerHTML = topicsHTML;
+        }
+
+        // Apply filters to main hot topics
+        function applyMainHotTopicsFilters() {
+            if (!window.currentHotTopics || window.currentHotTopics.length === 0) {
+                return;
+            }
+
+            const categoryFilter = document.getElementById('categoryFilterMain').value;
+            const hotLevelFilter = document.getElementById('hotLevelFilter').value;
+
+            let filtered = [...window.currentHotTopics];
+
+            // Filter by category
+            if (categoryFilter !== 'all') {
+                filtered = filtered.filter(topic => topic.category === categoryFilter);
+            }
+
+            // Filter by hot level (score)
+            if (hotLevelFilter !== 'all') {
+                const minScore = parseInt(hotLevelFilter);
+                filtered = filtered.filter(topic => topic.score >= minScore);
+            }
+
+            window.filteredHotTopics = filtered;
+            displayMainHotTopics(filtered);
+        }
+
+        // Update hot topics statistics
+        function updateHotTopicsStatistics(data) {
+            const stats = data.categoryStats || {};
+            const topics = data.topics || [];
+
+            document.getElementById('totalTopicsCount').textContent = topics.length;
+            document.getElementById('superHotCount').textContent = topics.filter(t => t.score >= 90).length;
+            document.getElementById('sourcesCount').textContent = Object.keys(stats.sources || {}).length;
+            document.getElementById('categoriesCount').textContent = Object.keys(stats.categories || {}).length;
+        }
+
+        // Get color class based on score
+        function getScoreColor(score) {
+            if (score >= 95) return 'bg-danger';
+            if (score >= 85) return 'bg-warning';
+            if (score >= 75) return 'bg-info';
+            return 'bg-secondary';
+        }
+
+        // Show topic detail in modal
+        window.showTopicDetail = function(index) {
+            const topic = window.filteredHotTopics[index];
+            if (!topic) return;
+
+            document.getElementById('modalTopicTitle').textContent = topic.title;
+            document.getElementById('modalTopicDescription').textContent = topic.description;
+            document.getElementById('modalTopicCategory').textContent = topic.category;
+            document.getElementById('modalTopicScore').textContent = topic.score + '%';
+            document.getElementById('modalTopicSource').textContent = topic.source;
+            document.getElementById('modalTopicTime').textContent = new Date().toLocaleString('vi-VN');
+
+            // Generate writing angles
+            const angles = generateWritingAngles(topic);
+            const anglesList = document.getElementById('modalWritingAngles');
+            anglesList.innerHTML = angles.map(angle => `<li class="mb-1"><i class="fas fa-chevron-right me-2 text-primary"></i>${angle}</li>`).join('');
+
+            // Generate keywords
+            const keywords = generateKeywords(topic);
+            const keywordsDiv = document.getElementById('modalKeywords');
+            keywordsDiv.innerHTML = keywords.map(kw => `<span class="badge bg-light text-dark me-1 mb-1">${kw}</span>`).join('');
+
+            // Store current topic for actions
+            window.currentModalTopic = topic;
+        };
+
+        // Generate writing angles based on topic
+        function generateWritingAngles(topic) {
+            const baseAngles = {
+                'Kinh tế': [
+                    'Phân tích tác động đến thị trường và doanh nghiệp',
+                    'Góc nhìn từ người tiêu dùng và nhà đầu tư',
+                    'So sánh với tình hình quốc tế và khu vực'
+                ],
+                'Công nghệ': [
+                    'Ứng dụng thực tế trong đời sống và kinh doanh',
+                    'Xu hướng phát triển và dự báo tương lai',
+                    'Thách thức và cơ hội cho Việt Nam'
+                ],
+                'Xã hội': [
+                    'Tác động đến các tầng lớp xã hội khác nhau',
+                    'Giải pháp và chính sách từ nhà nước',
+                    'Kinh nghiệm từ các nước khác'
+                ],
+                'Thể thao': [
+                    'Phân tích kỹ thuật và chiến thuật',
+                    'Tác động đến tinh thần người hâm mộ',
+                    'Ý nghĩa với phong trào thể thao Việt Nam'
+                ],
+                'Chứng khoán': [
+                    'Phân tích kỹ thuật và cơ bản',
+                    'Tác động đến nhà đầu tư cá nhân',
+                    'Xu hướng thị trường và dự báo'
+                ],
+                'Crypto': [
+                    'Phân tích biến động và nguyên nhân',
+                    'Tác động đến hệ sinh thái blockchain',
+                    'Quy định pháp lý và triển vọng'
+                ]
+            };
+
+            return baseAngles[topic.category] || [
+                'Phân tích hiện tượng và nguyên nhân',
+                'Tác động đến cộng đồng và xã hội',
+                'Giải pháp và hướng phát triển'
+            ];
+        }
+
+        // Generate keywords based on topic
+        function generateKeywords(topic) {
+            const words = topic.title.split(' ').concat(topic.description.split(' '));
+            const stopwords = ['là', 'và', 'của', 'trong', 'với', 'được', 'có', 'để', 'từ', 'cho', 'về', 'theo', 'các', 'những', 'này', 'đó', 'một', 'sẽ', 'đã', 'không', 'tại', 'trên', 'sau', 'trước'];
+            
+            return words
+                .filter(word => word.length > 3 && !stopwords.includes(word.toLowerCase()))
+                .slice(0, 8)
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+        }
+
+        // Quick use topic for writing
+        window.quickUseForWriting = function(title, description) {
+            // Switch to AI writing feature
+            document.querySelector('[data-feature="ai-write"]').click();
+            
+            // Wait for UI to load then fill data
+            setTimeout(() => {
+                document.getElementById('fromHotTopics').checked = true;
+                document.getElementById('fromHotTopics').dispatchEvent(new Event('change'));
+                
+                setTimeout(() => {
+                    // Simulate topic selection
+                    document.getElementById('selectedTopicDetails').value = `${title}\n\n${description}`;
+                    document.getElementById('selectedTopicDetails').readOnly = false;
+                }, 500);
+            }, 300);
+        };
+
+        // Quick copy topic
+        window.quickCopyTopic = function(title) {
+            navigator.clipboard.writeText(title).then(() => {
+                // Show temporary success message
+                const btn = event.target;
+                const originalHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.classList.add('btn-success');
+                btn.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalHTML;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 1500);
+            });
+        };
+
+        // Use topic for AI writing (from modal)
+        window.useTopicForAIWriting = function() {
+            if (!window.currentModalTopic) return;
+            
+            const topic = window.currentModalTopic;
+            bootstrap.Modal.getInstance(document.getElementById('topicDetailModal')).hide();
+            
+            quickUseForWriting(topic.title, topic.description);
+        };
+
+        // Copy topic information (from modal)
+        window.copyTopicInformation = function() {
+            if (!window.currentModalTopic) return;
+            
+            const topic = window.currentModalTopic;
+            const info = `Chủ đề: ${topic.title}\n\nMô tả: ${topic.description}\n\nChuyên mục: ${topic.category}\nĐộ Hot: ${topic.score}%\nNguồn: ${topic.source}`;
+            
+            navigator.clipboard.writeText(info).then(() => {
+                const btn = document.getElementById('copyTopicInfo');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check me-2"></i>Đã copy!';
+                btn.classList.add('btn-success');
+                btn.classList.remove('btn-outline-secondary');
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.classList.remove('btn-success');
+                    btn.classList.add('btn-outline-secondary');
+                }, 2000);
+            });
+        };
+
+        // Refresh hot topics sources
+        async function refreshHotTopicsSources() {
+            const btn = document.getElementById('refreshSourcesBtn');
+            const originalText = btn.innerHTML;
+            
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Đang refresh...';
+            btn.disabled = true;
+            
+            // Simulate refresh delay
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Reload topics
+            await loadMainHotTopics();
+            
+            btn.innerHTML = originalText;
+            btn.disabled = false;
         };
     </script>
 </body>

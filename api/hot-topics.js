@@ -4,12 +4,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    console.log('Fetching hot topics from multiple real sources...');
-    
-    const { category = 'all', source = 'all' } = req.query;
+    console.log('Fetching enhanced hot topics...');
 
-    // Get trending topics from multiple real sources
-    const topics = await fetchHotTopicsFromSources(category, source);
+    // Get selected sources from query parameters
+    const sourcesParam = req.query.sources || 'google,baomoi,social,news';
+    const selectedSources = sourcesParam.split(',');
+    
+    console.log('Selected sources:', selectedSources);
+
+    // Get trending topics from multiple enhanced sources
+    const topics = await fetchEnhancedHotTopics(selectedSources);
     
     // Generate category statistics
     const categoryStats = generateCategoryStats(topics);
@@ -18,8 +22,9 @@ export default async function handler(req, res) {
       topics: topics,
       categoryStats: categoryStats,
       lastUpdated: new Date().toISOString(),
-      sources: ['Google Trends', 'Baomoi.com', 'Social Media', 'Vietnamese News'],
-      totalTopics: topics.length
+      sources: ['Google Trends', 'BaoMoi.com', 'Social Media', 'Vietnamese News'],
+      selectedSources: selectedSources,
+      totalCategories: 10
     });
 
   } catch (error) {
@@ -31,61 +36,44 @@ export default async function handler(req, res) {
   }
 }
 
-// Fetch hot topics from real sources
-async function fetchHotTopicsFromSources(categoryFilter = 'all', sourceFilter = 'all') {
+// Fetch hot topics from multiple enhanced sources
+async function fetchEnhancedHotTopics(selectedSources) {
   try {
-    console.log(`Fetching topics for category: ${categoryFilter}, source: ${sourceFilter}`);
-    
-    const allTopics = [];
-    
-    // Fetch from Google Trends (Vietnam)
-    if (sourceFilter === 'all' || sourceFilter === 'google-trends') {
-      try {
-        const googleTopics = await fetchGoogleTrendsVietnam(categoryFilter);
-        allTopics.push(...googleTopics);
-      } catch (error) {
-        console.log('Google Trends fetch failed, using fallback:', error.message);
-      }
+    let allTopics = [];
+
+    // Google Trends simulation
+    if (selectedSources.includes('google')) {
+      const googleTopics = await generateGoogleTrendingTopics();
+      allTopics.push(...googleTopics);
     }
 
-    // Fetch from Baomoi.com
-    if (sourceFilter === 'all' || sourceFilter === 'baomoi') {
-      try {
-        const baomoiTopics = await fetchBaomoiHotTopics(categoryFilter);
-        allTopics.push(...baomoiTopics);
-      } catch (error) {
-        console.log('Baomoi fetch failed, using fallback:', error.message);
-      }
+    // BaoMoi.com simulation  
+    if (selectedSources.includes('baomoi')) {
+      const baomoiTopics = await generateBaoMoiTrendingTopics();
+      allTopics.push(...baomoiTopics);
     }
 
-    // Fetch from Social Media trends
-    if (sourceFilter === 'all' || sourceFilter === 'social-media') {
-      try {
-        const socialTopics = await fetchSocialMediaTrends(categoryFilter);
-        allTopics.push(...socialTopics);
-      } catch (error) {
-        console.log('Social Media fetch failed, using fallback:', error.message);
-      }
+    // Social Media simulation
+    if (selectedSources.includes('social')) {
+      const socialTopics = await generateSocialMediaTrendingTopics();
+      allTopics.push(...socialTopics);
     }
 
-    // If no topics from real sources, use fallback
-    if (allTopics.length === 0) {
-      console.log('All real sources failed, using fallback topics');
-      return getFallbackTopicsByCategory(categoryFilter);
+    // Vietnamese News simulation
+    if (selectedSources.includes('news')) {
+      const newsTopics = await generateVietnameseNewsTrendingTopics();
+      allTopics.push(...newsTopics);
     }
 
-    // Remove duplicates and rank by score
+    // AI-generated current events (always include for freshness)
+    const currentTopics = await generateCurrentTrendingTopics();
+    allTopics.push(...currentTopics);
+
+    // Remove duplicates and sort by score
     const uniqueTopics = removeDuplicateTopics(allTopics);
-    
-    // Filter by category if specified
-    const filteredTopics = categoryFilter === 'all' ? 
-      uniqueTopics : 
-      uniqueTopics.filter(topic => 
-        topic.category.toLowerCase() === categoryFilter.toLowerCase()
-      );
 
-    // Sort by score and return top 15
-    return filteredTopics
+    // Sort by score and return top 15 (increased from 10)
+    return uniqueTopics
       .sort((a, b) => b.score - a.score)
       .slice(0, 15)
       .map((topic, index) => ({
@@ -94,28 +82,21 @@ async function fetchHotTopicsFromSources(categoryFilter = 'all', sourceFilter = 
       }));
 
   } catch (error) {
-    console.error('Error fetching from sources:', error);
-    return getFallbackTopicsByCategory(categoryFilter);
+    console.error('Error fetching enhanced topics:', error);
+    return getFallbackTopics();
   }
 }
 
-// Fetch from Google Trends Vietnam
-async function fetchGoogleTrendsVietnam(category = 'all') {
-  console.log('Fetching Google Trends Vietnam...');
-  
-  // Since direct Google Trends API requires authentication and can be complex,
-  // we'll use a hybrid approach: AI to generate current trending topics based on real data patterns
+// Generate current trending topics using AI
+async function generateCurrentTrendingTopics() {
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {
-    return [];
+    console.log('No OpenAI API key, using fallback topics');
+    return getFallbackTopics().slice(0, 4);
   }
 
   try {
-    const categoryPrompt = category === 'all' ? 
-      'tất cả lĩnh vực' : 
-      getCategoryDisplayName(category);
-
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -126,102 +107,22 @@ async function fetchGoogleTrendsVietnam(category = 'all') {
         model: 'gpt-4o-mini',
         messages: [{
           role: 'user',
-          content: `Hãy phân tích các xu hướng tìm kiếm HOT nhất trên Google Việt Nam hiện tại (tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}) trong lĩnh vực: ${categoryPrompt}.
+          content: `Hãy tạo ra 4 chủ đề đang HOT và trending nhất hiện tại tại Việt Nam (tháng ${new Date().getMonth() + 1}/${new Date().getFullYear()}) để viết báo. 
 
 Yêu cầu:
-- Dựa trên các sự kiện thời sự thực tế đang diễn ra
-- Phản ánh đúng mối quan tâm của người Việt Nam
-- Các từ khóa/chủ đề thực sự được tìm kiếm nhiều
-- Phù hợp để viết báo
+- Chủ đề phải thực tế, có tính thời sự cao
+- Phù hợp với người Việt Nam
+- Có thể viết thành bài báo hay
+- Bao gồm: kinh tế, công nghệ, xã hội, văn hóa
 
-Trả về JSON format cho 4-5 chủ đề:
+Trả về JSON format:
 [
   {
-    "title": "Tiêu đề chủ đề trending",
-    "description": "Mô tả chi tiết tại sao hot",
-    "category": "Thể thao|Kinh tế|Xã hội|Công nghệ|Giáo dục|Chứng khoán|Crypto|Văn hóa",
-    "score": 85-98,
-    "source": "Google Trends",
-    "keywords": ["keyword1", "keyword2"],
-    "searchVolume": "high|medium|low"
-  }
-]`
-        }],
-        temperature: 0.7,
-        max_tokens: 1200
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content.trim();
-    
-    try {
-      const topics = JSON.parse(content);
-      return Array.isArray(topics) ? topics.map(topic => ({
-        ...topic,
-        source: 'Google Trends'
-      })) : [];
-    } catch (parseError) {
-      console.error('Failed to parse Google Trends response:', parseError);
-      return [];
-    }
-
-  } catch (error) {
-    console.error('Error fetching Google Trends:', error);
-    return [];
-  }
-}
-
-// Fetch from Baomoi.com hot topics
-async function fetchBaomoiHotTopics(category = 'all') {
-  console.log('Fetching Baomoi.com hot topics...');
-  
-  try {
-    const cheerio = require('cheerio');
-    
-    // Use AI to simulate fetching hot topics from Baomoi based on current trends
-    const apiKey = process.env.OPENAI_API_KEY;
-    
-    if (!apiKey) {
-      return getBaomoiFallbackTopics(category);
-    }
-
-    const categoryPrompt = category === 'all' ? 
-      'tất cả chuyên mục' : 
-      getCategoryDisplayName(category);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{
-          role: 'user',
-          content: `Hãy mô phỏng các bài báo HOT đang có lượt xem cao nhất trên Baomoi.com trong chuyên mục: ${categoryPrompt} (ngày ${new Date().toLocaleDateString('vi-VN')}).
-
-Yêu cầu:
-- Phản ánh đúng phong cách báo chí Việt Nam
-- Các tin tức thời sự thực tế đang được quan tâm
-- Tiêu đề hấp dẫn như trên báo mạng
-- Chủ đề gần gũi với người Việt
-
-Trả về JSON format cho 3-4 bài:
-[
-  {
-    "title": "Tiêu đề bài báo hot như trên baomoi",
-    "description": "Tóm tắt nội dung chính của bài báo",
-    "category": "Thể thao|Kinh tế|Xã hội|Công nghệ|Giáo dục|Chứng khoán|Crypto|Văn hóa",
-    "score": 80-95,
-    "source": "Baomoi.com",
-    "readCount": "15.2K|25.6K|45.8K",
-    "timeAgo": "2 giờ trước|1 ngày trước"
+    "title": "Tiêu đề ngắn gọn",
+    "description": "Mô tả chi tiết 1-2 câu",
+    "category": "Loại (Kinh tế/Công nghệ/Xã hội/Văn hóa)",
+    "score": 95,
+    "source": "Current Events"
   }
 ]`
         }],
@@ -237,123 +138,130 @@ Trả về JSON format cho 3-4 bài:
     const data = await response.json();
     const content = data.choices[0].message.content.trim();
     
+    // Parse JSON response
     try {
       const topics = JSON.parse(content);
-      return Array.isArray(topics) ? topics.map(topic => ({
-        ...topic,
-        source: 'Baomoi.com'
-      })) : [];
+      return Array.isArray(topics) ? topics : [];
     } catch (parseError) {
-      console.error('Failed to parse Baomoi response:', parseError);
-      return getBaomoiFallbackTopics(category);
+      console.error('Failed to parse AI response:', parseError);
+      return [];
     }
 
   } catch (error) {
-    console.error('Error fetching Baomoi topics:', error);
-    return getBaomoiFallbackTopics(category);
+    console.error('Error generating current topics:', error);
+    return [];
   }
 }
 
-// Fetch from Social Media trends
-async function fetchSocialMediaTrends(category = 'all') {
-  console.log('Fetching Social Media trends...');
+// Generate Google Trends topics (simulated)
+async function generateGoogleTrendingTopics() {
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth() + 1;
   
-  try {
-    const apiKey = process.env.OPENAI_API_KEY;
-    
-    if (!apiKey) {
-      return getSocialMediaFallbackTopics(category);
+  return [
+    {
+      title: "Bitcoin và thị trường Crypto biến động mạnh",
+      description: "Giá Bitcoin và các đồng tiền số khác dao động mạnh, tác động đến thị trường tài chính toàn cầu và Việt Nam",
+      category: "Crypto",
+      score: 96,
+      source: "Google Trends"
+    },
+    {
+      title: "VN-Index và thị trường chứng khoán Việt Nam",
+      description: "Diễn biến thị trường chứng khoán, các cổ phiếu hot và xu hướng đầu tư của nhà đầu tư cá nhân",
+      category: "Chứng khoán",
+      score: 89,
+      source: "Google Trends"
+    },
+    {
+      title: "Euro 2024 và World Cup 2026 - Bóng đá châu Âu",
+      description: "Các trận đấu nổi bật, đội tuyển Việt Nam và sự phát triển bóng đá trong nước",
+      category: "Thể thao",
+      score: 94,
+      source: "Google Trends"
     }
-
-    const categoryPrompt = category === 'all' ? 
-      'tất cả chủ đề' : 
-      getCategoryDisplayName(category);
-
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{
-          role: 'user',
-          content: `Phân tích các chủ đề VIRAL trên mạng xã hội Việt Nam (Facebook, TikTok, Twitter) hiện tại trong lĩnh vực: ${categoryPrompt}.
-
-Yêu cầu:
-- Hashtags đang trending thực tế
-- Các vấn đề được cộng đồng mạng quan tâm
-- Phong trào xã hội, thử thách viral
-- Phù hợp báo chí đưa tin
-
-Trả về JSON format cho 3-4 chủ đề:
-[
-  {
-    "title": "Chủ đề viral trên mạng xã hội",
-    "description": "Tại sao chủ đề này đang viral",
-    "category": "Thể thao|Kinh tế|Xã hội|Công nghệ|Giáo dục|Chứng khoán|Crypto|Văn hóa", 
-    "score": 75-92,
-    "source": "Social Media",
-    "platforms": ["Facebook", "TikTok", "Twitter"],
-    "hashtags": ["#hashtag1", "#hashtag2"]
-  }
-]`
-        }],
-        temperature: 0.9,
-        max_tokens: 1000
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content.trim();
-    
-    try {
-      const topics = JSON.parse(content);
-      return Array.isArray(topics) ? topics.map(topic => ({
-        ...topic,
-        source: 'Social Media'
-      })) : [];
-    } catch (parseError) {
-      console.error('Failed to parse Social Media response:', parseError);
-      return getSocialMediaFallbackTopics(category);
-    }
-
-  } catch (error) {
-    console.error('Error fetching Social Media trends:', error);
-    return getSocialMediaFallbackTopics(category);
-  }
+  ];
 }
 
-// Helper functions
-function getCategoryDisplayName(category) {
-  const categoryMap = {
-    'the-thao': 'Thể thao',
-    'kinh-te': 'Kinh tế', 
-    'xa-hoi': 'Xã hội',
-    'cong-nghe': 'Công nghệ',
-    'giao-duc': 'Giáo dục',
-    'chung-khoan': 'Chứng khoán',
-    'crypto': 'Cryptocurrency',
-    'van-hoa': 'Văn hóa'
-  };
-  return categoryMap[category] || category;
+// Generate BaoMoi.com trending topics (simulated)
+async function generateBaoMoiTrendingTopics() {
+  return [
+    {
+      title: "Cải cách giáo dục và chương trình mới 2024",
+      description: "Những thay đổi trong chương trình giáo dục phổ thông và đại học, tác động đến học sinh và phụ huynh",
+      category: "Giáo dục",
+      score: 87,
+      source: "BaoMoi.com"
+    },
+    {
+      title: "Y tế công và bảo hiểm xã hội",
+      description: "Cải cách hệ thống y tế, chi phí khám chữa bệnh và quyền lợi của người dân",
+      category: "Sức khỏe",
+      score: 85,
+      source: "BaoMoi.com"
+    },
+    {
+      title: "Du lịch nội địa và phục hồi sau Covid",
+      description: "Sự phục hồi của ngành du lịch Việt Nam và xu hướng du lịch nội địa của người dân",
+      category: "Du lịch",
+      score: 78,
+      source: "BaoMoi.com"
+    }
+  ];
 }
 
-function removeDuplicateTopics(topics) {
-  const seen = new Set();
-  return topics.filter(topic => {
-    const key = topic.title.toLowerCase().trim();
-    if (seen.has(key)) {
-      return false;
+// Generate Social Media trending topics (simulated)
+async function generateSocialMediaTrendingTopics() {
+  return [
+    {
+      title: "TikTok và văn hóa Gen Z Việt Nam",
+      description: "Ảnh hưởng của TikTok đến giới trẻ, xu hướng viral và những thách thức của phụ huynh",
+      category: "Văn hóa",
+      score: 92,
+      source: "Social Media"
+    },
+    {
+      title: "Livestream bán hàng và thương mại điện tử",
+      description: "Xu hướng bán hàng qua livestream, influencer marketing và thay đổi thói quen mua sắm",
+      category: "Kinh tế",
+      score: 90,
+      source: "Social Media"
+    },
+    {
+      title: "Mental health và áp lực xã hội của giới trẻ",
+      description: "Vấn đề sức khỏe tinh thần, stress học tập và công việc trong thời đại số",
+      category: "Sức khỏe",
+      score: 86,
+      source: "Social Media"
     }
-    seen.add(key);
-    return true;
-  });
+  ];
+}
+
+// Generate Vietnamese News trending topics (simulated)
+async function generateVietnameseNewsTrendingTopics() {
+  return [
+    {
+      title: "Chính sách kinh tế và hỗ trợ doanh nghiệp SME",
+      description: "Các gói hỗ trợ từ chính phủ cho doanh nghiệp nhỏ và vừa, khởi nghiệp trong bối cảnh phục hồi kinh tế",
+      category: "Kinh tế",
+      score: 88,
+      source: "Vietnamese News"
+    },
+    {
+      title: "Giao thông đô thị và quy hoạch thành phố thông minh",
+      description: "Các dự án giao thông, quy hoạch đô thị và giải pháp cho tắc nghẽn tại các thành phố lớn",
+      category: "Xã hội",
+      score: 83,
+      source: "Vietnamese News"
+    },
+    {
+      title: "Năng lượng tái tạo và phát triển bền vững",
+      description: "Các dự án năng lượng mặt trời, gió và cam kết Net Zero của Việt Nam đến 2050",
+      category: "Xã hội",
+      score: 81,
+      source: "Vietnamese News"
+    }
+  ];
 }
 
 // Generate category statistics
@@ -391,190 +299,161 @@ function generateCategoryStats(topics) {
   return stats;
 }
 
-// Fallback topics by category
-function getFallbackTopicsByCategory(category = 'all') {
-  const allFallbackTopics = [
-    // Thể thao
-    {
-      title: "V.League 2024 và cạnh tranh ngôi vô địch",
-      description: "Cuộc đua hấp dẫn giữa các đội bóng hàng đầu trong mùa giải V.League",
-      category: "Thể thao",
-      score: 92,
-      source: "Fallback Topics"
-    },
-    {
-      title: "Đội tuyển Việt Nam chuẩn bị Asian Cup",
-      description: "Danh sách cầu thủ và chiến thuật của HLV Philippe Troussier",
-      category: "Thể thao", 
-      score: 88,
-      source: "Fallback Topics"
-    },
-    
-    // Kinh tế
-    {
-      title: "Lãi suất ngân hàng tháng 12/2024",
-      description: "Xu hướng lãi suất tiết kiệm và vay của các ngân hàng lớn",
-      category: "Kinh tế",
+// Generate Vietnamese-specific trending topics
+async function generateVietnameseTrendingTopics() {
+  const currentMonth = new Date().getMonth() + 1;
+  const currentYear = new Date().getFullYear();
+  
+  const seasonalTopics = {
+    1: [{ // January
+      title: "Xu hướng du lịch Tết Nguyên đán 2024",
+      description: "Các điểm đến hot và xu hướng du lịch trong dịp Tết cổ truyền",
+      category: "Văn hóa",
       score: 90,
-      source: "Fallback Topics"
-    },
+      source: "Vietnamese Culture"
+    }],
+    3: [{ // March  
+      title: "Mùa tuyển sinh đại học và áp lực học đường",
+      description: "Thực trạng giáo dục và áp lực thi cử trong hệ thống giáo dục Việt Nam",
+      category: "Xã hội", 
+      score: 85,
+      source: "Vietnamese Society"
+    }],
+    6: [{ // June
+      title: "Mùa thi tốt nghiệp THPT và tương lai của thế hệ trẻ",
+      description: "Kỳ thi quan trọng và định hướng nghề nghiệp của học sinh Việt Nam",
+      category: "Xã hội",
+      score: 92,
+      source: "Vietnamese Society"
+    }],
+    9: [{ // September
+      title: "Năm học mới và đổi mới giáo dục",
+      description: "Những thay đổi trong chương trình giáo dục và phương pháp học tập",
+      category: "Xã hội",
+      score: 80,
+      source: "Vietnamese Society"  
+    }],
+    12: [{ // December
+      title: "Thị trường cuối năm và xu hướng tiêu dùng",
+      description: "Hoạt động mua sắm cuối năm và xu hướng tiêu dùng của người Việt",
+      category: "Kinh tế",
+      score: 78,
+      source: "Vietnamese Economy"
+    }]
+  };
+
+  // Always include these evergreen Vietnamese topics
+  const evergreenTopics = [
     {
-      title: "Thị trường bất động sản cuối năm 2024",
-      description: "Giá nhà đất và thanh khoản thị trường BDS trong quý IV",
+      title: "Bất động sản và giá nhà đất tại các thành phố lớn", 
+      description: "Thị trường bất động sản và khả năng mua nhà của người trẻ Việt Nam",
       category: "Kinh tế",
       score: 87,
-      source: "Fallback Topics"
+      source: "Vietnamese Economy"
     },
-
-    // Xã hội  
     {
-      title: "Tăng lương tối thiểu 2025",
-      description: "Mức lương tối thiểu vùng mới và tác động đến người lao động",
-      category: "Xã hội",
+      title: "Startup Việt và câu chuyện khởi nghiệp",
+      description: "Hệ sinh thái khởi nghiệp và những startup unicorn Việt Nam",
+      category: "Kinh tế", 
+      score: 75,
+      source: "Vietnamese Business"
+    }
+  ];
+
+  const seasonal = seasonalTopics[currentMonth] || [];
+  return [...seasonal, ...evergreenTopics];
+}
+
+// Remove duplicate topics based on title similarity
+function removeDuplicateTopics(topics) {
+  const unique = [];
+  const seenTitles = new Set();
+  
+  for (const topic of topics) {
+    // Simple duplicate check based on first few words
+    const titleKey = topic.title.split(' ').slice(0, 3).join(' ').toLowerCase();
+    
+    if (!seenTitles.has(titleKey)) {
+      seenTitles.add(titleKey);
+      unique.push(topic);
+    }
+  }
+  
+  return unique;
+}
+
+// Enhanced fallback topics with all categories
+function getFallbackTopics() {
+  return [
+    {
+      title: "Bitcoin tăng giá mạnh, nhà đầu tư Việt gấp rút mua vào",
+      description: "Giá Bitcoin vượt mốc $70,000, nhiều nhà đầu tư Việt Nam quan tâm đến thị trường crypto",
+      category: "Crypto",
       score: 95,
       source: "Fallback Topics"
     },
     {
-      title: "Chính sách BHXH mới năm 2025",
-      description: "Những thay đổi quan trọng về bảo hiểm xã hội và y tế",
-      category: "Xã hội",
-      score: 85,
-      source: "Fallback Topics"
-    },
-
-    // Công nghệ
-    {
-      title: "AI và ChatGPT thay đổi công việc ở Việt Nam", 
-      description: "Tác động của trí tuệ nhân tạo đến thị trường lao động Việt Nam",
-      category: "Công nghệ",
-      score: 93,
+      title: "VN-Index biến động, cổ phiếu ngân hàng dẫn dắt thị trường",
+      description: "Thị trường chứng khoán Việt Nam có những phiên giao dịch sôi động với thanh khoản cao",
+      category: "Chứng khoán",
+      score: 92,
       source: "Fallback Topics"
     },
     {
-      title: "5G Viettel và MobiFone mở rộng phủ sóng",
-      description: "Tiến độ triển khai mạng 5G tại các thành phố lớn",
-      category: "Công nghệ",
-      score: 80,
-      source: "Fallback Topics"
-    },
-
-    // Giáo dục
-    {
-      title: "Tuyển sinh đại học 2025 có gì mới",
-      description: "Thay đổi trong phương thức xét tuyển và ngành học hot",
-      category: "Giáo dục", 
-      score: 89,
+      title: "Đội tuyển bóng đá Việt Nam chuẩn bị cho vòng loại World Cup",
+      description: "HLV Troussier công bố danh sách, người hâm mộ kỳ vọng thành tích tốt",
+      category: "Thể thao",
+      score: 90,
       source: "Fallback Topics"
     },
     {
-      title: "Học phí đại học tăng mạnh năm 2025",
-      description: "Mức học phí mới của các trường đại học công và tư thục",
+      title: "Cải cách giáo dục: Chương trình mới có gì khác biệt?",
+      description: "Bộ Giáo dục công bố những thay đổi lớn trong chương trình giáo dục phổ thông",
       category: "Giáo dục",
-      score: 86,
-      source: "Fallback Topics"
-    },
-
-    // Chứng khoán
-    {
-      title: "VN-Index và triển vọng cuối năm 2024",
-      description: "Phân tích thị trường chứng khoán và các cổ phiếu tiềm năng",
-      category: "Chứng khoán",
-      score: 84,
-      source: "Fallback Topics"
-    },
-    {
-      title: "Cổ phiếu ngân hàng hút dòng tiền",
-      description: "Nhóm cổ phiếu ngân hàng được đánh giá tích cực trong Q4",
-      category: "Chứng khoán",
-      score: 82,
-      source: "Fallback Topics"
-    },
-
-    // Crypto
-    {
-      title: "Bitcoin vượt 100,000 USD - cơ hội hay rủi ro?",
-      description: "Phân tích đà tăng mạnh của Bitcoin và tác động đến thị trường",
-      category: "Crypto",
-      score: 91,
-      source: "Fallback Topics"
-    },
-    {
-      title: "Quy định pháp lý về crypto tại Việt Nam 2025",
-      description: "Những thay đổi trong chính sách quản lý tiền số",
-      category: "Crypto",
       score: 88,
       source: "Fallback Topics"
     },
-
-    // Văn hóa
     {
-      title: "Phim Việt chinh phục khán giả cuối năm",
-      description: "Các bộ phim Việt Nam được yêu thích trong mùa lễ hội",
-      category: "Văn hóa",
-      score: 79,
+      title: "Trí tuệ nhân tạo thay đổi thị trường lao động Việt Nam",
+      description: "AI tác động mạnh đến việc làm, nhiều nghề nghiệp cần kỹ năng mới",
+      category: "Công nghệ",
+      score: 87,
       source: "Fallback Topics"
     },
     {
-      title: "Lễ hội cuối năm và du lịch nội địa",
-      description: "Các điểm đến hot và xu hướng du lịch dịp Tết Dương lịch",
-      category: "Văn hóa", 
+      title: "Y tế công: Bệnh viện quá tải, cần giải pháp cấp bách",
+      description: "Hệ thống y tế công đối mặt nhiều thách thức, đặc biệt tại các thành phố lớn",
+      category: "Sức khỏe",
+      score: 85,
+      source: "Fallback Topics"
+    },
+    {
+      title: "Kinh tế số và cơ hội cho doanh nghiệp SME",
+      description: "Chuyển đổi số mở ra nhiều cơ hội mới cho doanh nghiệp nhỏ và vừa",
+      category: "Kinh tế",
+      score: 83,
+      source: "Fallback Topics"
+    },
+    {
+      title: "Du lịch Việt Nam: Hồi phục sau đại dịch",
+      description: "Ngành du lịch đang từng bước phục hồi với nhiều chính sách hỗ trợ",
+      category: "Du lịch",
+      score: 80,
+      source: "Fallback Topics"
+    },
+    {
+      title: "Giao thông đô thị: Tắc nghẽn và giải pháp bền vững",
+      description: "Các thành phố lớn đang tìm giải pháp cho vấn đề kẹt xe ngày càng nghiêm trọng",
+      category: "Xã hội",
       score: 78,
+      source: "Fallback Topics"
+    },
+    {
+      title: "TikTok và xu hướng văn hóa mới của giới trẻ",
+      description: "Mạng xã hội TikTok tạo ra những xu hướng văn hóa mới, ảnh hưởng mạnh đến GenZ",
+      category: "Văn hóa",
+      score: 75,
       source: "Fallback Topics"
     }
   ];
-
-  if (category === 'all') {
-    return allFallbackTopics;
-  }
-
-  const categoryDisplayName = getCategoryDisplayName(category);
-  return allFallbackTopics.filter(topic => 
-    topic.category === categoryDisplayName
-  );
-}
-
-function getBaomoiFallbackTopics(category) {
-  return [
-    {
-      title: "Giá vàng hôm nay tăng vọt lên đỉnh mới", 
-      description: "Giá vàng SJC và vàng nhẫn đạt mức kỷ lục trong phiên giao dịch",
-      category: "Kinh tế",
-      score: 89,
-      source: "Baomoi.com",
-      readCount: "28.5K",
-      timeAgo: "1 giờ trước"
-    },
-    {
-      title: "Thông tin mới về thưởng Tết Nguyên đán 2025",
-      description: "Các doanh nghiệp lên kế hoạch thưởng Tết cho nhân viên",
-      category: "Xã hội", 
-      score: 85,
-      source: "Baomoi.com",
-      readCount: "35.2K",
-      timeAgo: "3 giờ trước" 
-    }
-  ].filter(topic => category === 'all' || topic.category === getCategoryDisplayName(category));
-}
-
-function getSocialMediaFallbackTopics(category) {
-  return [
-    {
-      title: "#ChallengeCuoiNam2024 làm náo loạn MXH",
-      description: "Trào lưu thử thách cuối năm được giới trẻ hưởng ứng mạnh mẽ",
-      category: "Văn hóa",
-      score: 87,
-      source: "Social Media",
-      platforms: ["TikTok", "Facebook"],
-      hashtags: ["#ChallengeCuoiNam2024", "#TrendingVietnam"]
-    },
-    {
-      title: "Livestream bán hàng - nghề hot của GenZ",
-      description: "Xu hướng kinh doanh online qua livestream bùng nổ",
-      category: "Kinh tế",
-      score: 83,
-      source: "Social Media", 
-      platforms: ["TikTok", "Facebook", "Shopee"],
-      hashtags: ["#LivestreamBanHang", "#KinhDoanhOnline"]
-    }
-  ].filter(topic => category === 'all' || topic.category === getCategoryDisplayName(category));
 } 
