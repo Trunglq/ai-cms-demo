@@ -170,6 +170,11 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
     const articles = await page.evaluate((maxArticles, currentUrl) => {
       const articleLinks = [];
       
+      // Debug: Log basic page info
+      console.log(`🔍 DEBUG: Page title: ${document.title}`);
+      console.log(`🔍 DEBUG: Total links on page: ${document.querySelectorAll('a').length}`);
+      console.log(`🔍 DEBUG: Current URL: ${currentUrl}`);
+      
       // Site-specific selectors based on URL
       let selectors = [];
       
@@ -255,10 +260,12 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
         ];
       }
 
+      console.log(`🔍 DEBUG: Will try ${selectors.length} selectors:`, selectors);
+      
       selectors.forEach((selector, index) => {
         try {
           const links = document.querySelectorAll(selector);
-          console.log(`Selector ${index + 1} (${selector}): found ${links.length} links`);
+          console.log(`🔍 DEBUG: Selector ${index + 1} (${selector}): found ${links.length} links`);
           
           links.forEach(link => {
             const title = link.textContent?.trim();
@@ -315,36 +322,71 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
 
       // If no articles found, try aggressive fallback
       if (articleLinks.length === 0) {
-        console.log('No articles found with specific selectors, trying fallback...');
+        console.log('🔍 DEBUG: No articles found with specific selectors, trying aggressive fallback...');
         
-        // Try any link that looks like an article
-        const fallbackLinks = document.querySelectorAll('a[href]');
-        fallbackLinks.forEach(link => {
+        // Try very aggressive fallback - any link with decent title
+        const allLinks = document.querySelectorAll('a[href]');
+        console.log(`🔍 DEBUG: Total links to check: ${allLinks.length}`);
+        
+        let processed = 0;
+        allLinks.forEach(link => {
           const title = link.textContent?.trim();
           const href = link.getAttribute('href');
+          processed++;
           
-          if (title && href && title.length > 20 && title.length < 150) {
+          if (processed <= 5) { // Log first 5 for debugging
+            console.log(`🔍 DEBUG: Link ${processed}: "${title?.substring(0,50)}..." -> ${href?.substring(0,50)}...`);
+          }
+          
+          // More lenient criteria
+          if (title && href && title.length > 10 && title.length < 200) {
             let fullUrl = href;
-            if (href.startsWith('/')) {
-              const baseUrl = new URL(window.location.href).origin;
-              fullUrl = baseUrl + href;
-            }
             
-            // Check if it looks like an article URL
-            if ((fullUrl.includes('.htm') || fullUrl.match(/\/\d+/) || 
-                 fullUrl.includes('post-') || fullUrl.includes('bai-viet')) && 
-                !articleLinks.some(a => a.url === fullUrl) && 
-                !fullUrl.includes('#') && !fullUrl.includes('javascript:')) {
-              articleLinks.push({
-                title: title,
-                url: fullUrl,
-                description: title
-              });
+            // Handle relative URLs
+            try {
+              if (href.startsWith('/')) {
+                const baseUrl = new URL(window.location.href).origin;
+                fullUrl = baseUrl + href;
+              } else if (href.startsWith('./')) {
+                const baseUrl = new URL(window.location.href).origin;
+                fullUrl = baseUrl + href.substring(1);
+              } else if (!href.startsWith('http')) {
+                // Skip invalid URLs
+                return;
+              }
+              
+              // Very aggressive - accept almost any internal link that looks like content
+              const skipPatterns = [
+                'javascript:', 'mailto:', 'tel:', '#',
+                'facebook.com', 'twitter.com', 'youtube.com', 'google.com',
+                '/login', '/register', '/contact', '/about',
+                '.jpg', '.png', '.gif', '.pdf', '.zip'
+              ];
+              
+              const shouldSkip = skipPatterns.some(pattern => 
+                fullUrl.toLowerCase().includes(pattern.toLowerCase())
+              );
+              
+              if (!shouldSkip && !articleLinks.some(a => a.url === fullUrl)) {
+                articleLinks.push({
+                  title: title,
+                  url: fullUrl,
+                  description: title
+                });
+              }
+            } catch (e) {
+              // Skip invalid URLs
             }
           }
         });
         
-        console.log(`Fallback found ${articleLinks.length} potential articles`);
+        console.log(`🔍 DEBUG: Aggressive fallback found ${articleLinks.length} potential articles`);
+        if (articleLinks.length > 0) {
+          console.log(`🔍 DEBUG: Sample articles:`, articleLinks.slice(0, 3).map(a => ({
+            title: a.title.substring(0, 50) + '...',
+            url: a.url.substring(0, 80) + '...'
+          })));
+        }
       }
       
       // Log what selectors are being used
