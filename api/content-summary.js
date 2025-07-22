@@ -173,6 +173,9 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
     }
 
     // Extract article links and info based on common news sites
+    console.log(`🔍 DEBUG: Starting extraction for ${categoryUrl}`);
+    console.log(`🔍 DEBUG: Expected hostname: ${new URL(categoryUrl).hostname}`);
+    
     const articles = await page.evaluate((maxArticles, currentUrl) => {
       const articleLinks = [];
       
@@ -180,6 +183,14 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
       console.log(`🔍 DEBUG: Page title: ${document.title}`);
       console.log(`🔍 DEBUG: Total links on page: ${document.querySelectorAll('a').length}`);
       console.log(`🔍 DEBUG: Current URL: ${currentUrl}`);
+      
+      // Sample some links to understand the page structure
+      const allLinks = Array.from(document.querySelectorAll('a'));
+      const linksWithHref = allLinks.filter(a => a.href && a.href.includes('.htm'));
+      console.log(`🔍 DEBUG: Links with .htm: ${linksWithHref.length}`);
+      if (linksWithHref.length > 0) {
+        console.log(`🔍 DEBUG: Sample .htm links: ${linksWithHref.slice(0, 3).map(a => a.href).join(', ')}`);
+      }
       
       // Site-specific selectors based on URL
       let selectors = [];
@@ -435,6 +446,16 @@ async function extractCategoryHeadlines(categoryUrl, maxArticles) {
         });
         console.log('VnEconomy page info:', pageInfo);
       }
+    }
+    
+    // Enhanced debugging output
+    console.log(`🔍 DEBUG: Extraction completed`);
+    console.log(`🔍 DEBUG: Total articles extracted: ${articles.length}`);
+    if (articles.length > 0) {
+      console.log(`🔍 DEBUG: Sample article titles: ${articles.slice(0, 3).map(a => a.title.substring(0, 50)).join(' | ')}`);
+      console.log(`🔍 DEBUG: Sample article URLs: ${articles.slice(0, 3).map(a => a.url.substring(0, 60)).join(' | ')}`);
+    } else {
+      console.log(`🔍 DEBUG: ❌ NO ARTICLES FOUND - This is the root cause of the error`);
     }
     
     return articles;
