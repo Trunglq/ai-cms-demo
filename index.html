@@ -145,31 +145,43 @@
             0% { background-position: 1rem 0; }
             100% { background-position: 0 0; }
         }
-        /* Force horizontal layout for statistics cards */
+        /* Force horizontal layout for statistics cards - STRONGER CSS */
+        #hotTopicsStats {
+            display: block !important;
+        }
         #hotTopicsStats .row {
             display: flex !important;
-            flex-wrap: wrap;
+            flex-wrap: nowrap !important;
+            gap: 0.75rem !important;
+            justify-content: space-between !important;
         }
         #hotTopicsStats .col-6,
         #hotTopicsStats .col-md-3 {
-            flex: 0 0 auto;
-            padding: 0.5rem;
+            flex: 1 1 0% !important;
+            min-width: 0 !important;
+            padding: 0 !important;
         }
-        @media (max-width: 767.98px) {
+        @media (max-width: 991.98px) {
+            #hotTopicsStats .row {
+                flex-wrap: wrap !important;
+            }
             #hotTopicsStats .col-6 {
-                width: 50%;
+                flex: 1 1 45% !important;
+                margin-bottom: 0.75rem;
             }
         }
-        @media (min-width: 768px) {
-            #hotTopicsStats .col-md-3 {
-                width: 25%;
-            }
+        /* Ensure card content is properly aligned */
+        #hotTopicsStats .card {
+            height: 100% !important;
+            min-height: 80px !important;
         }
-        /* Ensure card content is horizontal */
         #hotTopicsStats .d-flex {
             align-items: center !important;
             justify-content: flex-start !important;
             text-align: left !important;
+        }
+        #hotTopicsStats .card-body {
+            padding: 0.75rem !important;
         }
     </style>
 </head>
@@ -1083,7 +1095,7 @@
                                                 </label>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-6">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" id="sourceBaoMoi" value="baomoi" checked>
                                                 <label class="form-check-label" for="sourceBaoMoi">
@@ -1091,19 +1103,11 @@
                                                 </label>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-6">
                                             <div class="form-check">
                                                 <input class="form-check-input" type="checkbox" id="sourceSocial" value="social" checked>
                                                 <label class="form-check-label" for="sourceSocial">
                                                     <i class="fas fa-share-alt me-1"></i> Mạng xã hội
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-4">
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="checkbox" id="sourceNews" value="news" checked>
-                                                <label class="form-check-label" for="sourceNews">
-                                                    <i class="fas fa-tv me-1"></i> Báo chí VN
                                                 </label>
                                             </div>
                                         </div>
@@ -1804,15 +1808,15 @@
             // Source checkboxes management
             document.getElementById('sourceAll').addEventListener('change', function() {
                 const isChecked = this.checked;
-                ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial', 'sourceNews'].forEach(id => {
+                ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial'].forEach(id => {
                     document.getElementById(id).checked = isChecked;
                 });
             });
 
             // Individual source checkboxes
-            ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial', 'sourceNews'].forEach(id => {
+            ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial'].forEach(id => {
                 document.getElementById(id).addEventListener('change', function() {
-                    const allChecked = ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial', 'sourceNews']
+                    const allChecked = ['sourceGoogle', 'sourceBaoMoi', 'sourceSocial']
                         .every(sourceId => document.getElementById(sourceId).checked);
                     document.getElementById('sourceAll').checked = allChecked;
                 });
@@ -1850,12 +1854,12 @@
                 // Simulate loading progress
                 const progressBar = document.getElementById('loadingProgress');
                 const statusText = document.getElementById('loadingStatus');
-                const sources = ['Google Trends', 'BaoMoi.com', 'Mạng xã hội', 'Báo chí VN'];
+                const sources = ['Google Trends', 'BaoMoi.com', 'Mạng xã hội'];
                 
                 for (let i = 0; i < sources.length; i++) {
-                    progressBar.style.width = `${(i + 1) * 25}%`;
+                    progressBar.style.width = `${(i + 1) * 33.33}%`;
                     statusText.textContent = `Đang quét ${sources[i]}...`;
-                    await new Promise(resolve => setTimeout(resolve, 800));
+                    await new Promise(resolve => setTimeout(resolve, 600));
                 }
 
                 // Get selected sources
@@ -1863,7 +1867,6 @@
                 if (document.getElementById('sourceGoogle').checked) selectedSources.push('google');
                 if (document.getElementById('sourceBaoMoi').checked) selectedSources.push('baomoi');
                 if (document.getElementById('sourceSocial').checked) selectedSources.push('social');
-                if (document.getElementById('sourceNews').checked) selectedSources.push('news');
 
                 // Call enhanced API
                 const response = await fetch(`/api/hot-topics?sources=${selectedSources.join(',')}`, {
