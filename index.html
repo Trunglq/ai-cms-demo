@@ -833,29 +833,32 @@
                                                 <label for="categoryFilter" class="form-label small"><i class="fas fa-folder me-1"></i>Chuyên mục:</label>
                                                 <select id="categoryFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả chuyên mục</option>
-                                                    <option value="Kinh tế">Kinh tế</option>
-                                                    <option value="Công nghệ">Công nghệ</option>
-                                                    <option value="Xã hội">Xã hội</option>
-                                                    <option value="Văn hóa">Văn hóa</option>
+                                                    <option value="Thể thao">🏈 Thể thao</option>
+                                                    <option value="Kinh tế">💰 Kinh tế</option>
+                                                    <option value="Xã hội">👥 Xã hội</option>
+                                                    <option value="Công nghệ">🔬 Công nghệ</option>
+                                                    <option value="Giáo dục">🎓 Giáo dục</option>
+                                                    <option value="Chứng khoán">📈 Chứng khoán</option>
+                                                    <option value="Crypto">₿ Cryptocurrency</option>
+                                                    <option value="Văn hóa">🎭 Văn hóa</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label small"><i class="fas fa-chart-line me-1"></i>Trend Score:</label>
                                                 <select id="scoreFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả mức độ</option>
-                                                    <option value="90">Siêu Hot (90%+)</option>
-                                                    <option value="80">Hot (80%+)</option>
-                                                    <option value="70">Trending (70%+)</option>
+                                                    <option value="90">🔥 Siêu Hot (90%+)</option>
+                                                    <option value="80">🌟 Hot (80%+)</option>
+                                                    <option value="70">📈 Trending (70%+)</option>
                                                 </select>
                                             </div>
                                             <div class="col-md-4">
                                                 <label class="form-label small"><i class="fas fa-rss me-1"></i>Nguồn:</label>
                                                 <select id="sourceFilter" class="form-select form-select-sm">
                                                     <option value="all">Tất cả nguồn</option>
-                                                    <option value="Current Events">Current Events</option>
-                                                    <option value="Tech Trends">Tech Trends</option>
-                                                    <option value="Vietnamese">Vietnamese Topics</option>
-                                                    <option value="Fallback">General Topics</option>
+                                                    <option value="google-trends">🔍 Google Trends</option>
+                                                    <option value="baomoi">📰 Baomoi.com</option>
+                                                    <option value="social-media">📱 Social Media</option>
                                                 </select>
                                             </div>
                                         </div>
@@ -1186,7 +1189,21 @@
                 loadingDiv.style.display = 'block';
                 topicsList.innerHTML = '';
                 
-                const response = await fetch('/api/hot-topics', {
+                // Get current filter values
+                const categoryFilter = document.getElementById('categoryFilter')?.value || 'all';
+                const sourceFilter = document.getElementById('sourceFilter')?.value || 'all';
+                
+                // Build query parameters
+                const params = new URLSearchParams();
+                if (categoryFilter !== 'all') params.append('category', categoryFilter);
+                if (sourceFilter !== 'all') params.append('source', sourceFilter);
+                
+                const queryString = params.toString();
+                const url = '/api/hot-topics' + (queryString ? '?' + queryString : '');
+                
+                console.log('Fetching from:', url);
+                
+                const response = await fetch(url, {
                     method: 'GET',
                     headers: { 'Content-Type': 'application/json' }
                 });
@@ -1196,6 +1213,7 @@
                 }
                 
                 const data = await response.json();
+                console.log('Hot topics data:', data);
                 
                 // Store all topics globally
                 window.allHotTopics = data.topics || [];
@@ -1204,12 +1222,7 @@
                 // Update filter options with counts
                 updateFilterOptions(data.categoryStats);
                 
-                // Reset filters
-                document.getElementById('categoryFilter').value = 'all';
-                document.getElementById('scoreFilter').value = 'all';
-                document.getElementById('sourceFilter').value = 'all';
-                
-                // Display all topics initially
+                // Display topics
                 displayHotTopics(window.allHotTopics);
                 
             } catch (error) {
@@ -1217,7 +1230,8 @@
                 topicsList.innerHTML = `
                     <div class="col-12">
                         <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-1"></i>Không thể tải chủ đề Hot. <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Thử lại</button>
+                            <i class="fas fa-exclamation-triangle me-1"></i>Không thể tải chủ đề Hot từ ${sourceFilter === 'google-trends' ? 'Google Trends' : sourceFilter === 'baomoi' ? 'Baomoi.com' : sourceFilter === 'social-media' ? 'Social Media' : 'các nguồn'}. 
+                            <button class="btn btn-sm btn-outline-primary ms-2" onclick="loadHotTopics()">Thử lại</button>
                         </div>
                     </div>
                 `;
@@ -1226,42 +1240,10 @@
             }
         }
 
-        // Apply filters to hot topics
+        // Apply filters to hot topics - now reloads from API with filters
         function applyHotTopicsFilters() {
-            const categoryFilter = document.getElementById('categoryFilter').value;
-            const scoreFilter = document.getElementById('scoreFilter').value;
-            const sourceFilter = document.getElementById('sourceFilter').value;
-            
-            let filteredTopics = [...window.allHotTopics];
-            
-            // Filter by category
-            if (categoryFilter !== 'all') {
-                filteredTopics = filteredTopics.filter(topic => 
-                    topic.category === categoryFilter
-                );
-            }
-            
-            // Filter by score
-            if (scoreFilter !== 'all') {
-                const minScore = parseInt(scoreFilter);
-                filteredTopics = filteredTopics.filter(topic => 
-                    topic.score >= minScore
-                );
-            }
-            
-            // Filter by source
-            if (sourceFilter !== 'all') {
-                filteredTopics = filteredTopics.filter(topic => {
-                    if (sourceFilter === 'Current Events') return topic.source === 'Current Events';
-                    if (sourceFilter === 'Tech Trends') return topic.source === 'Tech Trends';
-                    if (sourceFilter === 'Vietnamese') return topic.source.includes('Vietnamese');
-                    if (sourceFilter === 'Fallback') return topic.source === 'Fallback Topics';
-                    return true;
-                });
-            }
-            
-            // Display filtered topics
-            displayHotTopics(filteredTopics, true); // true indicates this is a filtered view
+            // Reload topics from API with current filters
+            loadHotTopics();
         }
 
         // Display hot topics in grid
@@ -1288,7 +1270,49 @@
             // Update topics counter
             updateTopicsCounter(topics.length, window.allHotTopics.length, isFiltered);
             
-                            const topicsHTML = topics.map((topic, index) => `
+                            const topicsHTML = topics.map((topic, index) => {
+                // Get source-specific badge and icon
+                let sourceBadge = '';
+                let sourceIcon = '';
+                if (topic.source === 'Google Trends') {
+                    sourceBadge = 'bg-primary';
+                    sourceIcon = '🔍';
+                } else if (topic.source === 'Baomoi.com') {
+                    sourceBadge = 'bg-success';
+                    sourceIcon = '📰';
+                } else if (topic.source === 'Social Media') {
+                    sourceBadge = 'bg-info';
+                    sourceIcon = '📱';
+                } else {
+                    sourceBadge = 'bg-secondary';
+                    sourceIcon = '📊';
+                }
+                
+                // Get category emoji
+                let categoryEmoji = '';
+                switch(topic.category) {
+                    case 'Thể thao': categoryEmoji = '🏈'; break;
+                    case 'Kinh tế': categoryEmoji = '💰'; break;
+                    case 'Xã hội': categoryEmoji = '👥'; break;
+                    case 'Công nghệ': categoryEmoji = '🔬'; break;
+                    case 'Giáo dục': categoryEmoji = '🎓'; break;
+                    case 'Chứng khoán': categoryEmoji = '📈'; break;
+                    case 'Crypto': categoryEmoji = '₿'; break;
+                    case 'Văn hóa': categoryEmoji = '🎭'; break;
+                    default: categoryEmoji = '📝'; break;
+                }
+                
+                // Extra info based on source
+                let extraInfo = '';
+                if (topic.readCount && topic.timeAgo) {
+                    extraInfo = `<small class="text-primary"><i class="fas fa-eye me-1"></i>${topic.readCount} • ${topic.timeAgo}</small>`;
+                } else if (topic.hashtags && topic.hashtags.length > 0) {
+                    extraInfo = `<small class="text-info"><i class="fab fa-twitter me-1"></i>${topic.hashtags.slice(0, 2).join(' ')}</small>`;
+                } else if (topic.keywords && topic.keywords.length > 0) {
+                    extraInfo = `<small class="text-warning"><i class="fas fa-search me-1"></i>Keywords: ${topic.keywords.slice(0, 2).join(', ')}</small>`;
+                }
+                
+                return `
                 <div class="col-md-6 mb-3">
                     <div class="card hot-topic-card h-100" 
                          data-title="${topic.title}"
@@ -1299,18 +1323,20 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-start mb-2">
                                 <span class="badge bg-danger">#${index + 1}</span>
-                                <small class="text-muted">${topic.source}</small>
+                                <span class="badge ${sourceBadge}">${sourceIcon} ${topic.source}</span>
                             </div>
                             <h6 class="card-title">${topic.title}</h6>
                             <p class="card-text text-muted small">${topic.description}</p>
-                            <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
                                 <small class="text-success"><i class="fas fa-fire me-1"></i>Trend: ${topic.score}%</small>
-                                <small class="text-muted">${topic.category}</small>
+                                <small class="text-muted">${categoryEmoji} ${topic.category}</small>
                             </div>
+                            ${extraInfo ? `<div class="mt-2">${extraInfo}</div>` : ''}
                         </div>
                     </div>
                 </div>
-            `).join('');
+            `;
+            }).join('');
             
             topicsList.innerHTML = topicsHTML;
         }
@@ -1390,10 +1416,14 @@
             // Reset to default options with counts
             categoryFilter.innerHTML = `
                 <option value="all">Tất cả chuyên mục (${stats.total || 0})</option>
-                <option value="Kinh tế">Kinh tế (${categories['Kinh tế'] || 0})</option>
-                <option value="Công nghệ">Công nghệ (${categories['Công nghệ'] || 0})</option>
-                <option value="Xã hội">Xã hội (${categories['Xã hội'] || 0})</option>
-                <option value="Văn hóa">Văn hóa (${categories['Văn hóa'] || 0})</option>
+                <option value="Thể thao">🏈 Thể thao (${categories['Thể thao'] || 0})</option>
+                <option value="Kinh tế">💰 Kinh tế (${categories['Kinh tế'] || 0})</option>
+                <option value="Xã hội">👥 Xã hội (${categories['Xã hội'] || 0})</option>
+                <option value="Công nghệ">🔬 Công nghệ (${categories['Công nghệ'] || 0})</option>
+                <option value="Giáo dục">🎓 Giáo dục (${categories['Giáo dục'] || 0})</option>
+                <option value="Chứng khoán">📈 Chứng khoán (${categories['Chứng khoán'] || 0})</option>
+                <option value="Crypto">₿ Cryptocurrency (${categories['Crypto'] || 0})</option>
+                <option value="Văn hóa">🎭 Văn hóa (${categories['Văn hóa'] || 0})</option>
             `;
             
             // Update score filter options
@@ -1401,25 +1431,23 @@
             const scoreRanges = stats.scoreRanges || {};
             scoreFilter.innerHTML = `
                 <option value="all">Tất cả mức độ (${stats.total || 0})</option>
-                <option value="90">Siêu Hot 90%+ (${scoreRanges.super_hot || 0})</option>
-                <option value="80">Hot 80%+ (${(scoreRanges.super_hot || 0) + (scoreRanges.hot || 0)})</option>
-                <option value="70">Trending 70%+ (${stats.total || 0})</option>
+                <option value="90">🔥 Siêu Hot 90%+ (${scoreRanges.super_hot || 0})</option>
+                <option value="80">🌟 Hot 80%+ (${(scoreRanges.super_hot || 0) + (scoreRanges.hot || 0)})</option>
+                <option value="70">📈 Trending 70%+ (${stats.total || 0})</option>
             `;
             
             // Update source filter options  
             const sourceFilter = document.getElementById('sourceFilter');
             const sources = stats.sources || {};
-            const currentEvents = sources['Current Events'] || 0;
-            const techTrends = sources['Tech Trends'] || 0;
-            const vietnamese = Object.keys(sources).filter(s => s.includes('Vietnamese')).reduce((sum, key) => sum + (sources[key] || 0), 0);
-            const fallback = sources['Fallback Topics'] || 0;
+            const googleTrends = sources['Google Trends'] || 0;
+            const baomoi = sources['Baomoi.com'] || 0;
+            const socialMedia = sources['Social Media'] || 0;
             
             sourceFilter.innerHTML = `
                 <option value="all">Tất cả nguồn (${stats.total || 0})</option>
-                <option value="Current Events">Current Events (${currentEvents})</option>
-                <option value="Tech Trends">Tech Trends (${techTrends})</option>
-                <option value="Vietnamese">Vietnamese Topics (${vietnamese})</option>
-                <option value="Fallback">General Topics (${fallback})</option>
+                <option value="google-trends">🔍 Google Trends (${googleTrends})</option>
+                <option value="baomoi">📰 Baomoi.com (${baomoi})</option>
+                <option value="social-media">📱 Social Media (${socialMedia})</option>
             `;
         }
 

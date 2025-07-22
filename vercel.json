@@ -1,0 +1,44 @@
+{
+  "version": 2,
+  "name": "ai-cms-demo",
+  "builds": [
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    },
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ],
+  "functions": {
+    "api/hot-topics.js": {
+      "maxDuration": 30
+    },
+    "api/ai-write.js": {
+      "maxDuration": 60
+    },
+    "api/translate.js": {
+      "maxDuration": 30
+    },
+    "api/translate-url.js": {
+      "maxDuration": 45
+    },
+    "api/spellcheck.js": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "NODE_ENV": "production"
+  }
+} 
