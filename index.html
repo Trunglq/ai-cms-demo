@@ -1302,6 +1302,14 @@
                 } else if (feature === 'content-summary') {
                     content.innerHTML = `
                         <h2><i class="fas fa-compress-alt me-2 text-info"></i>Tóm Tắt Nội Dung</h2>
+                        
+                        <!-- API Status Test -->
+                        <div class="alert alert-info mb-3">
+                            <strong>🔧 API Status Test:</strong>
+                            <button class="btn btn-sm btn-outline-primary ms-2" onclick="testApiEndpoint()">Test API</button>
+                            <span id="apiStatus" class="ms-2"></span>
+                        </div>
+                        
                         <div class="card">
                             <div class="card-body">
                                 <!-- Summary Mode Selection -->
@@ -2644,6 +2652,52 @@
                 }, 500);
             } else {
                 alert('Không tìm thấy tính năng Text to Speech!');
+            }
+        };
+
+        // Test API Endpoint Status
+        window.testApiEndpoint = async function() {
+            const statusSpan = document.getElementById('apiStatus');
+            statusSpan.innerHTML = '⏳ Testing...';
+            
+            try {
+                console.log('🔍 Testing API endpoints...');
+                
+                // Test 1: Health check
+                const healthResponse = await fetch('/api/content-summary?test=health');
+                console.log('Health check response:', healthResponse.status, healthResponse.statusText);
+                
+                if (healthResponse.ok) {
+                    const healthData = await healthResponse.json();
+                    console.log('Health check data:', healthData);
+                    statusSpan.innerHTML = '✅ API is WORKING! Ready to use.';
+                    statusSpan.className = 'text-success fw-bold';
+                } else {
+                    throw new Error(`Health check failed: ${healthResponse.status}`);
+                }
+                
+                // Test 2: Test summary endpoint
+                const testResponse = await fetch('/api/test-summary');
+                console.log('Test endpoint response:', testResponse.status);
+                
+                if (testResponse.ok) {
+                    const testData = await testResponse.json();
+                    console.log('Test endpoint data:', testData);
+                }
+                
+            } catch (error) {
+                console.error('API Test Error:', error);
+                statusSpan.innerHTML = `❌ API not available: ${error.message}`;
+                statusSpan.className = 'text-danger fw-bold';
+                
+                // Show deployment status
+                alert(`🚨 API Deployment Issue!\n\n` +
+                     `Error: ${error.message}\n\n` +
+                     `Possible causes:\n` +
+                     `• Vercel still deploying changes\n` +
+                     `• API function not deployed correctly\n` +
+                     `• Caching issues\n\n` +
+                     `💡 Solution: Wait 1-2 minutes and try again`);
             }
         };
     </script>
