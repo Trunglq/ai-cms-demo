@@ -2551,7 +2551,30 @@
 
                 } catch (error) {
                     console.error('Content Summary Error:', error);
-                    alert('Lỗi khi tóm tắt: ' + error.message);
+                    
+                    let errorMessage = error.message;
+                    
+                    // Enhanced error messages
+                    if (error.message.includes('Không tìm thấy bài báo nào')) {
+                        errorMessage = `❌ Không thể tóm tắt chuyên mục này!\n\n` +
+                                     `🔍 Có thể do:\n` +
+                                     `• Trang web chặn bot/crawler\n` +
+                                     `• Cấu trúc HTML của trang thay đổi\n` +
+                                     `• URL chuyên mục không hợp lệ\n\n` +
+                                     `💡 Giải pháp:\n` +
+                                     `• Thử với URL bài viết đơn lẻ thay vì chuyên mục\n` +
+                                     `• Copy link bài báo cụ thể và chọn "Tóm tắt bài viết"\n` +
+                                     `• Thử với trang chủ thay vì chuyên mục con`;
+                    } else if (error.message.includes('Failed to summarize')) {
+                        errorMessage = `❌ Lỗi khi tóm tắt nội dung!\n\n` +
+                                     `🔍 Nguyên nhân có thể:\n` +
+                                     `• Kết nối mạng không ổn định\n` +
+                                     `• Trang web không cho phép truy cập\n` +
+                                     `• Nội dung quá phức tạp để xử lý\n\n` +
+                                     `💡 Hãy thử lại sau vài phút hoặc sử dụng URL khác`;
+                    }
+                    
+                    alert(errorMessage);
                 } finally {
                     btn.disabled = false;
                     btn.innerHTML = originalText;

@@ -48,7 +48,7 @@ async function summarizeCategory(categoryUrl, settings) {
   const articles = await extractCategoryArticles(categoryUrl, maxArticles);
   
   if (articles.length === 0) {
-    throw new Error('Không tìm thấy bài báo nào trong chuyên mục này');
+    throw new Error(`Không tìm thấy bài báo nào trong chuyên mục này. URL: ${categoryUrl}. Có thể do: 1) Trang web chặn bot, 2) Cấu trúc HTML thay đổi, 3) URL không hợp lệ. Thử với URL bài viết đơn lẻ thay vì chuyên mục.`);
   }
 
   console.log(`Found ${articles.length} articles to summarize`);
@@ -116,57 +116,211 @@ async function extractCategoryArticles(categoryUrl, maxArticles) {
 
     await page.goto(categoryUrl, { waitUntil: 'domcontentloaded', timeout: 30000 });
     
-    // Wait for dynamic content
-    await page.waitForTimeout(2000);
+    // Wait for dynamic content and check if page loaded
+    await page.waitForTimeout(3000);
+    
+    // Check if page loaded successfully
+    const pageTitle = await page.title();
+    console.log(`Page loaded: ${pageTitle}`);
+    
+    // Check if there are any obvious blocking mechanisms
+    const hasBlockingElements = await page.evaluate(() => {
+      const blockingSelectors = [
+        '.captcha', '[id*="captcha"]', '[class*="captcha"]',
+        '.blocked', '[id*="blocked"]', '[class*="blocked"]',
+        '.access-denied', '[id*="access"]'
+      ];
+      
+      return blockingSelectors.some(selector => 
+        document.querySelector(selector) !== null
+      );
+    });
+    
+    if (hasBlockingElements) {
+      console.warn('Possible blocking mechanism detected on page');
+    }
 
     // Extract article links and info based on common news sites
-    const articles = await page.evaluate((maxArticles) => {
+    const articles = await page.evaluate((maxArticles, currentUrl) => {
       const articleLinks = [];
       
-      // Common selectors for Vietnamese news sites
-      const selectors = [
-        'article a[href*="/"]', // Generic article links
-        '.story a[href*="/"]', // VnExpress style
-        '.story-item a[href*="/"]',
-        '.article-item a[href*="/"]',
-        '.news-item a[href*="/"]',
-        '.story-title a',
-        '.title-news a',
-        'h3 a[href*="/"]',
-        'h2 a[href*="/"]',
-        '.item-news a',
-        '.story a',
-      ];
+      // Site-specific selectors based on URL
+      let selectors = [];
+      
+      if (currentUrl.includes('dantri.com')) {
+        // DanTri specific selectors
+        selectors = [
+          '.article-item a[href]',
+          '.news-item a[href]',
+          '.article-title a[href]',
+          '.article h3 a[href]',
+          '.story-item a[href]',
+          'h3.article-title a',
+          'h2.article-title a',
+          '.list-news-item a',
+          '.news-list-item a',
+          'article h3 a',
+          'article h2 a',
+          '.content-news a[href*="/"]',
+        ];
+      } else if (currentUrl.includes('vietnamnet.vn')) {
+        // VietnamNet specific selectors
+        selectors = [
+          '.verticalPost a[href]',
+          '.horizontalPost a[href]',
+          '.story-box a[href]',
+          '.news-item a[href]',
+          '.article-title a[href]',
+          'h3 a[href*="vietnamnet"]',
+          'h2 a[href*="vietnamnet"]',
+          '.post-title a',
+          '.article-box a',
+          '.story-item a',
+        ];
+      } else if (currentUrl.includes('vnexpress.net')) {
+        // VnExpress specific selectors
+        selectors = [
+          '.story a[href*="/"]',
+          '.story-item a[href*="/"]', 
+          '.item-news a[href*="/"]',
+          'h3.title-news a',
+          'h2.title-news a',
+          'article.item-news a',
+        ];
+      } else if (currentUrl.includes('tuoitre.vn')) {
+        // TuoiTre specific selectors
+        selectors = [
+          '.list-news-content a[href]',
+          '.news-item a[href]',
+          'h3 a[href*="tuoitre"]',
+          'h2 a[href*="tuoitre"]',
+          '.article-title a',
+        ];
+      } else {
+        // Generic fallback selectors
+        selectors = [
+          'article a[href*="/"]',
+          '.story a[href*="/"]',
+          '.story-item a[href*="/"]',
+          '.article-item a[href*="/"]',
+          '.news-item a[href*="/"]',
+          '.story-title a',
+          '.title-news a',
+          'h3 a[href*="/"]',
+          'h2 a[href*="/"]',
+          '.item-news a',
+          '.story a',
+        ];
+      }
 
-      selectors.forEach(selector => {
-        const links = document.querySelectorAll(selector);
-        links.forEach(link => {
+      selectors.forEach((selector, index) => {
+        try {
+          const links = document.querySelectorAll(selector);
+          console.log(`Selector ${index + 1} (${selector}): found ${links.length} links`);
+          
+          links.forEach(link => {
+            const title = link.textContent?.trim();
+            let href = link.getAttribute('href');
+            
+            // Enhanced validation
+            if (title && href && title.length > 15 && title.length < 200) {
+              // Skip navigation/menu items
+              const skipPatterns = [
+                'Đăng nhập', 'Đăng ký', 'Trang chủ', 'Liên hệ', 'Giới thiệu',
+                'Thể thao', 'Kinh doanh', 'Góc nhìn', 'Video', 'Podcast',
+                'Facebook', 'Twitter', 'Youtube', 'Zalo', 'RSS'
+              ];
+              
+              const shouldSkip = skipPatterns.some(pattern => 
+                title.toLowerCase().includes(pattern.toLowerCase())
+              );
+              
+              if (!shouldSkip) {
+                // Normalize URL
+                let fullUrl = href;
+                if (href.startsWith('/')) {
+                  const baseUrl = new URL(window.location.href).origin;
+                  fullUrl = baseUrl + href;
+                } else if (href.startsWith('./')) {
+                  const baseUrl = new URL(window.location.href).origin;
+                  fullUrl = baseUrl + href.substring(1);
+                }
+                
+                // Validate URL format
+                try {
+                  new URL(fullUrl);
+                  
+                  // Avoid duplicates and ensure it's a real article
+                  if (!articleLinks.some(a => a.url === fullUrl) && 
+                      (fullUrl.includes('.htm') || fullUrl.includes('.html') || 
+                       fullUrl.match(/\/\d+/) || fullUrl.includes('post-'))) {
+                    articleLinks.push({
+                      title: title,
+                      url: fullUrl,
+                      description: title
+                    });
+                  }
+                } catch (urlError) {
+                  console.log(`Invalid URL skipped: ${fullUrl}`);
+                }
+              }
+            }
+          });
+        } catch (selectorError) {
+          console.log(`Selector error (${selector}):`, selectorError.message);
+        }
+      });
+
+      // If no articles found, try aggressive fallback
+      if (articleLinks.length === 0) {
+        console.log('No articles found with specific selectors, trying fallback...');
+        
+        // Try any link that looks like an article
+        const fallbackLinks = document.querySelectorAll('a[href]');
+        fallbackLinks.forEach(link => {
           const title = link.textContent?.trim();
           const href = link.getAttribute('href');
           
-          if (title && href && title.length > 10) {
+          if (title && href && title.length > 20 && title.length < 150) {
             let fullUrl = href;
             if (href.startsWith('/')) {
               const baseUrl = new URL(window.location.href).origin;
               fullUrl = baseUrl + href;
             }
             
-            // Avoid duplicates
-            if (!articleLinks.some(a => a.url === fullUrl)) {
+            // Check if it looks like an article URL
+            if ((fullUrl.includes('.htm') || fullUrl.match(/\/\d+/) || 
+                 fullUrl.includes('post-') || fullUrl.includes('bai-viet')) && 
+                !articleLinks.some(a => a.url === fullUrl) && 
+                !fullUrl.includes('#') && !fullUrl.includes('javascript:')) {
               articleLinks.push({
                 title: title,
                 url: fullUrl,
-                description: title // Use title as description initially
+                description: title
               });
             }
           }
         });
-      });
+        
+        console.log(`Fallback found ${articleLinks.length} potential articles`);
+      }
+      
+      // Log what selectors are being used
+      console.log(`Using ${selectors.length} selectors for ${currentUrl}`);
+      console.log('Found articles:', articleLinks.length);
 
       return articleLinks.slice(0, maxArticles);
-    }, maxArticles);
+    }, maxArticles, categoryUrl);
 
-    console.log(`Extracted ${articles.length} article links from category`);
+    console.log(`Extracted ${articles.length} article links from category: ${categoryUrl}`);
+    
+    // Enhanced logging for debugging
+    if (articles.length > 0) {
+      console.log('Sample articles found:', articles.slice(0, 3).map(a => a.title));
+    } else {
+      console.warn('No articles found! This might indicate selector issues.');
+    }
+    
     return articles;
 
   } catch (error) {
