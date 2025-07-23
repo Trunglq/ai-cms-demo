@@ -4,6 +4,7 @@
   "description": "AI CMS Demo with translation and journalism features",
   "main": "index.html",
   "dependencies": {
+    "@google-cloud/speech": "^6.7.1",
     "@google-cloud/text-to-speech": "^5.3.0",
     "@mozilla/readability": "^0.6.0",
     "cheerio": "^1.0.0-rc.12",

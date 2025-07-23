@@ -1630,6 +1630,160 @@
                     
                     // Initialize TTS functionality
                     initializeTTSFeature();
+                } else if (feature === 'stt') {
+                    content.innerHTML = `
+                        <h2><i class="fas fa-microphone me-2 text-success"></i>Speech to Text</h2>
+                        
+                        <!-- Settings Panel -->
+                        <div class="card mb-4">
+                            <div class="card-header bg-success text-white">
+                                <h5 class="mb-0"><i class="fas fa-cogs me-2"></i>Cài đặt nhận diện giọng nói</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Ngôn ngữ nhận diện:</label>
+                                        <select id="sttLanguage" class="form-select">
+                                            <option value="vi-VN">🇻🇳 Tiếng Việt</option>
+                                            <option value="en-US">🇺🇸 Tiếng Anh (Mỹ)</option>
+                                            <option value="en-GB">🇬🇧 Tiếng Anh (Anh)</option>
+                                            <option value="ja-JP">🇯🇵 Tiếng Nhật</option>
+                                            <option value="ko-KR">🇰🇷 Tiếng Hàn</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Phương thức nhập:</label>
+                                        <div class="btn-group w-100" role="group">
+                                            <input type="radio" class="btn-check" name="sttMethod" id="microphoneMode" value="microphone" checked>
+                                            <label class="btn btn-outline-success" for="microphoneMode">
+                                                <i class="fas fa-microphone me-1"></i>Microphone
+                                            </label>
+                                            <input type="radio" class="btn-check" name="sttMethod" id="fileMode" value="file">
+                                            <label class="btn btn-outline-success" for="fileMode">
+                                                <i class="fas fa-file-audio me-1"></i>Upload File
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Microphone Recording Panel -->
+                        <div class="card mb-4" id="microphonePanel">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="fas fa-microphone me-2"></i>Ghi âm từ Microphone</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="text-center mb-4">
+                                    <div class="mb-3">
+                                        <div id="microphoneStatus" class="badge bg-secondary mb-2">Chưa bắt đầu</div>
+                                        <div id="recordingTime" class="text-muted small">00:00</div>
+                                    </div>
+                                    <div class="btn-group" role="group">
+                                        <button id="startRecordBtn" class="btn btn-success btn-lg">
+                                            <i class="fas fa-play me-2"></i>Bắt đầu ghi âm
+                                        </button>
+                                        <button id="stopRecordBtn" class="btn btn-danger btn-lg" disabled>
+                                            <i class="fas fa-stop me-2"></i>Dừng ghi âm
+                                        </button>
+                                        <button id="clearRecordBtn" class="btn btn-outline-secondary btn-lg" disabled>
+                                            <i class="fas fa-trash me-2"></i>Xóa
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Audio Playback -->
+                                <div id="audioPlaybackPanel" class="text-center" style="display: none;">
+                                    <h6>🎵 Audio đã ghi:</h6>
+                                    <audio id="recordedAudio" controls class="w-100 mb-3"></audio>
+                                    <button id="transcribeBtn" class="btn btn-primary">
+                                        <i class="fas fa-magic me-2"></i>Chuyển đổi thành văn bản
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- File Upload Panel -->
+                        <div class="card mb-4" id="fileUploadPanel" style="display: none;">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0"><i class="fas fa-file-audio me-2"></i>Upload File Audio</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label for="audioFileInput" class="form-label">Chọn file audio:</label>
+                                    <input type="file" class="form-control" id="audioFileInput" accept="audio/*,.wav,.mp3,.ogg,.webm,.m4a">
+                                    <div class="form-text">
+                                        Hỗ trợ: WAV, MP3, OGG, WebM, M4A (tối đa 10MB)
+                                    </div>
+                                </div>
+                                <div id="fileInfoPanel" class="alert alert-info" style="display: none;">
+                                    <h6>📁 Thông tin file:</h6>
+                                    <div id="fileInfo"></div>
+                                    <button id="transcribeFileBtn" class="btn btn-primary mt-2">
+                                        <i class="fas fa-magic me-2"></i>Chuyển đổi thành văn bản
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Processing Panel -->
+                        <div id="sttLoadingPanel" class="text-center py-4" style="display: none;">
+                            <div class="spinner-border text-success" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2 mb-0">
+                                <i class="fas fa-magic me-1"></i>
+                                <strong>Đang nhận diện âm thanh...</strong>
+                            </p>
+                            <small class="text-muted">Vui lòng đợi trong giây lát</small>
+                        </div>
+
+                        <!-- Results Panel -->
+                        <div class="card mt-4" id="sttResultsPanel" style="display: none;">
+                            <div class="card-header bg-success text-white">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h5 class="mb-0"><i class="fas fa-file-text me-2"></i>Kết Quả Nhận Diện</h5>
+                                    <div>
+                                        <button class="btn btn-light btn-sm me-2" onclick="copySTTResult()">
+                                            <i class="fas fa-copy me-1"></i>Copy
+                                        </button>
+                                        <button class="btn btn-warning btn-sm" onclick="sendSTTToTTS()">
+                                            <i class="fas fa-volume-up me-1"></i>Đọc lại
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Văn bản đã nhận diện:</label>
+                                    <textarea id="transcriptionResult" class="form-control" rows="6" readonly></textarea>
+                                </div>
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <small class="text-muted">
+                                            <i class="fas fa-percentage me-1"></i>
+                                            <strong>Độ chính xác:</strong> <span id="confidenceScore">-</span>
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            <strong>Thời gian xử lý:</strong> <span id="sttProcessingTime">-</span>
+                                        </small>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <small class="text-muted">
+                                            <i class="fas fa-file me-1"></i>
+                                            <strong>Kích thước:</strong> <span id="audioFileSize">-</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Initialize STT functionality
+                    initializeSTTFeature();
                 } else {
                     content.innerHTML = `<h2>${this.textContent}</h2><p>Đang phát triển tính năng: ${feature}. Nội dung sẽ được thêm sau.</p>`;
                 }
@@ -3387,6 +3541,437 @@
 
             console.log('✅ Text to Speech feature initialized successfully!');
         }
+
+        // STT Feature Implementation
+        function initializeSTTFeature() {
+            console.log('🎙️ Initializing Speech to Text feature...');
+
+            // Global variables for recording
+            let mediaRecorder = null;
+            let audioChunks = [];
+            let recordingStartTime = null;
+            let recordingTimer = null;
+            let currentAudioBlob = null;
+
+            // Get DOM elements
+            const sttLanguage = document.getElementById('sttLanguage');
+            const microphoneMode = document.getElementById('microphoneMode');
+            const fileMode = document.getElementById('fileMode');
+            const microphonePanel = document.getElementById('microphonePanel');
+            const fileUploadPanel = document.getElementById('fileUploadPanel');
+            const startRecordBtn = document.getElementById('startRecordBtn');
+            const stopRecordBtn = document.getElementById('stopRecordBtn');
+            const clearRecordBtn = document.getElementById('clearRecordBtn');
+            const microphoneStatus = document.getElementById('microphoneStatus');
+            const recordingTime = document.getElementById('recordingTime');
+            const audioPlaybackPanel = document.getElementById('audioPlaybackPanel');
+            const recordedAudio = document.getElementById('recordedAudio');
+            const transcribeBtn = document.getElementById('transcribeBtn');
+            const audioFileInput = document.getElementById('audioFileInput');
+            const fileInfoPanel = document.getElementById('fileInfoPanel');
+            const fileInfo = document.getElementById('fileInfo');
+            const transcribeFileBtn = document.getElementById('transcribeFileBtn');
+            const sttLoadingPanel = document.getElementById('sttLoadingPanel');
+            const sttResultsPanel = document.getElementById('sttResultsPanel');
+            const transcriptionResult = document.getElementById('transcriptionResult');
+            const confidenceScore = document.getElementById('confidenceScore');
+            const sttProcessingTime = document.getElementById('sttProcessingTime');
+            const audioFileSize = document.getElementById('audioFileSize');
+
+            // Method switching
+            microphoneMode.addEventListener('change', () => {
+                if (microphoneMode.checked) {
+                    microphonePanel.style.display = 'block';
+                    fileUploadPanel.style.display = 'none';
+                }
+            });
+
+            fileMode.addEventListener('change', () => {
+                if (fileMode.checked) {
+                    microphonePanel.style.display = 'none';
+                    fileUploadPanel.style.display = 'block';
+                }
+            });
+
+            // Recording timer function
+            function updateRecordingTime() {
+                if (recordingStartTime) {
+                    const elapsed = Math.floor((Date.now() - recordingStartTime) / 1000);
+                    const minutes = Math.floor(elapsed / 60);
+                    const seconds = elapsed % 60;
+                    recordingTime.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+
+            // Start recording
+            startRecordBtn.addEventListener('click', async () => {
+                try {
+                    console.log('🎙️ Starting microphone recording...');
+
+                    // Request microphone access
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            autoGainControl: true,
+                            sampleRate: 48000
+                        } 
+                    });
+
+                    // Create MediaRecorder
+                    const options = { mimeType: 'audio/webm;codecs=opus' };
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options.mimeType = 'audio/webm';
+                    }
+                    if (!MediaRecorder.isTypeSupported(options.mimeType)) {
+                        options.mimeType = 'audio/mp4';
+                    }
+
+                    mediaRecorder = new MediaRecorder(stream, options);
+                    audioChunks = [];
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = () => {
+                        console.log('🎙️ Recording stopped, processing audio...');
+                        
+                        // Create audio blob
+                        currentAudioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                        console.log('📊 Audio blob size:', currentAudioBlob.size, 'bytes');
+
+                        // Create audio URL for playback
+                        const audioUrl = URL.createObjectURL(currentAudioBlob);
+                        recordedAudio.src = audioUrl;
+                        audioPlaybackPanel.style.display = 'block';
+
+                        // Enable transcribe button
+                        transcribeBtn.disabled = false;
+
+                        // Stop all tracks
+                        stream.getTracks().forEach(track => track.stop());
+                    };
+
+                    // Start recording
+                    mediaRecorder.start(1000); // Collect data every second
+                    recordingStartTime = Date.now();
+                    
+                    // Update UI
+                    startRecordBtn.disabled = true;
+                    stopRecordBtn.disabled = false;
+                    clearRecordBtn.disabled = true;
+                    microphoneStatus.textContent = 'Đang ghi âm';
+                    microphoneStatus.className = 'badge bg-danger mb-2';
+
+                    // Start timer
+                    recordingTimer = setInterval(updateRecordingTime, 1000);
+
+                    console.log('✅ Recording started successfully');
+
+                } catch (error) {
+                    console.error('❌ Microphone access error:', error);
+                    alert('❌ Không thể truy cập microphone!\n\nLý do có thể:\n• Chưa cấp quyền microphone\n• Microphone đang được sử dụng\n• Trình duyệt không hỗ trợ\n\nVui lòng thử lại hoặc sử dụng chế độ Upload File.');
+                }
+            });
+
+            // Stop recording
+            stopRecordBtn.addEventListener('click', () => {
+                if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                    console.log('🛑 Stopping recording...');
+                    
+                    mediaRecorder.stop();
+                    clearInterval(recordingTimer);
+                    recordingTimer = null;
+
+                    // Update UI
+                    startRecordBtn.disabled = false;
+                    stopRecordBtn.disabled = true;
+                    clearRecordBtn.disabled = false;
+                    microphoneStatus.textContent = 'Hoàn thành';
+                    microphoneStatus.className = 'badge bg-success mb-2';
+                }
+            });
+
+            // Clear recording
+            clearRecordBtn.addEventListener('click', () => {
+                console.log('🗑️ Clearing recording...');
+                
+                // Reset recording data
+                currentAudioBlob = null;
+                audioChunks = [];
+                recordingStartTime = null;
+                
+                // Reset UI
+                audioPlaybackPanel.style.display = 'none';
+                sttResultsPanel.style.display = 'none';
+                recordedAudio.src = '';
+                recordingTime.textContent = '00:00';
+                microphoneStatus.textContent = 'Chưa bắt đầu';
+                microphoneStatus.className = 'badge bg-secondary mb-2';
+                clearRecordBtn.disabled = true;
+                transcribeBtn.disabled = true;
+
+                // Clear any existing URL
+                if (recordedAudio.src) {
+                    URL.revokeObjectURL(recordedAudio.src);
+                }
+            });
+
+            // File upload handling
+            audioFileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                console.log('📁 File selected:', file.name, file.size, 'bytes');
+
+                // Validate file size (10MB limit)
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                if (file.size > maxSize) {
+                    alert('❌ File quá lớn! Vui lòng chọn file nhỏ hơn 10MB.');
+                    audioFileInput.value = '';
+                    return;
+                }
+
+                // Validate file type
+                const allowedTypes = ['audio/wav', 'audio/mp3', 'audio/mpeg', 'audio/ogg', 'audio/webm', 'audio/m4a', 'audio/mp4'];
+                if (!allowedTypes.includes(file.type) && !file.name.match(/\.(wav|mp3|ogg|webm|m4a)$/i)) {
+                    alert('❌ Định dạng file không được hỗ trợ!\n\nCác định dạng được hỗ trợ: WAV, MP3, OGG, WebM, M4A');
+                    audioFileInput.value = '';
+                    return;
+                }
+
+                // Display file info
+                const fileSizeMB = (file.size / (1024 * 1024)).toFixed(2);
+                const duration = file.duration ? `${Math.round(file.duration)}s` : 'Không xác định';
+                
+                fileInfo.innerHTML = `
+                    <strong>📁 Tên file:</strong> ${file.name}<br>
+                    <strong>📊 Kích thước:</strong> ${fileSizeMB} MB<br>
+                    <strong>🎵 Định dạng:</strong> ${file.type || 'Không xác định'}<br>
+                    <strong>⏱️ Thời lượng:</strong> ${duration}
+                `;
+                
+                fileInfoPanel.style.display = 'block';
+                transcribeFileBtn.disabled = false;
+                currentAudioBlob = file;
+
+                console.log('✅ File validation passed');
+            });
+
+            // Transcribe from microphone recording
+            transcribeBtn.addEventListener('click', () => {
+                if (!currentAudioBlob) {
+                    alert('❌ Không có audio để chuyển đổi!');
+                    return;
+                }
+                performSTT(currentAudioBlob);
+            });
+
+            // Transcribe from uploaded file
+            transcribeFileBtn.addEventListener('click', () => {
+                if (!currentAudioBlob) {
+                    alert('❌ Vui lòng chọn file audio!');
+                    return;
+                }
+                performSTT(currentAudioBlob);
+            });
+
+            // Main STT processing function
+            async function performSTT(audioBlob) {
+                console.log('🎙️ Starting STT transcription...');
+                
+                // Show loading
+                sttLoadingPanel.style.display = 'block';
+                sttResultsPanel.style.display = 'none';
+
+                const startTime = Date.now();
+
+                try {
+                    // Convert audio to base64
+                    const base64Audio = await blobToBase64(audioBlob);
+                    
+                    console.log('📤 Sending STT request...');
+
+                    const response = await fetch('/api/speech-to-text', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            audioData: base64Audio,
+                            language: sttLanguage.value,
+                            encoding: 'WEBM_OPUS',
+                            sampleRate: 48000
+                        })
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                    }
+
+                    const result = await response.json();
+                    console.log('✅ STT response:', result);
+
+                    if (result.success) {
+                        // Display results
+                        transcriptionResult.value = result.transcription;
+                        confidenceScore.textContent = result.confidence ? `${(result.confidence * 100).toFixed(1)}%` : 'N/A';
+                        sttProcessingTime.textContent = result.processingTime || `${Date.now() - startTime}ms`;
+                        audioFileSize.textContent = result.audioSize || formatFileSize(audioBlob.size);
+
+                        // Show results panel
+                        sttResultsPanel.style.display = 'block';
+                        sttResultsPanel.scrollIntoView({ behavior: 'smooth' });
+
+                        // Success message
+                        const successAlert = document.createElement('div');
+                        successAlert.className = 'alert alert-success alert-dismissible fade show mt-3';
+                        successAlert.innerHTML = `
+                            ✅ <strong>Nhận diện thành công!</strong> 
+                            ${result.demoMode ? '<br><small>⚠️ Đây là kết quả demo. Cần Google Cloud credentials để sử dụng thật.</small>' : ''}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        sttResultsPanel.appendChild(successAlert);
+                        
+                        setTimeout(() => {
+                            if (successAlert && successAlert.parentNode) {
+                                successAlert.remove();
+                            }
+                        }, 8000);
+
+                    } else {
+                        throw new Error(result.error || 'Unknown error occurred');
+                    }
+
+                } catch (error) {
+                    console.error('❌ STT Error:', error);
+                    
+                    // Show error
+                    const errorAlert = document.createElement('div');
+                    errorAlert.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                    errorAlert.innerHTML = `
+                        ❌ <strong>Lỗi khi nhận diện âm thanh:</strong><br>
+                        ${error.message}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    sttLoadingPanel.parentNode.insertBefore(errorAlert, sttLoadingPanel.nextSibling);
+                    
+                    setTimeout(() => {
+                        if (errorAlert && errorAlert.parentNode) {
+                            errorAlert.remove();
+                        }
+                    }, 10000);
+
+                } finally {
+                    // Hide loading
+                    sttLoadingPanel.style.display = 'none';
+                }
+            }
+
+            // Helper function to convert blob to base64
+            function blobToBase64(blob) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                        const result = reader.result;
+                        resolve(result); // This includes the data: prefix
+                    };
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            }
+
+            // Helper function to format file size
+            function formatFileSize(bytes) {
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                if (bytes === 0) return '0 Bytes';
+                const i = Math.floor(Math.log(bytes) / Math.log(1024));
+                return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+            }
+
+            console.log('✅ Speech to Text feature initialized successfully!');
+        }
+
+        // Helper functions for STT
+        window.copySTTResult = function() {
+            const transcriptionResult = document.getElementById('transcriptionResult');
+            if (!transcriptionResult.value) {
+                alert('❌ Chưa có kết quả để copy!');
+                return;
+            }
+            
+            transcriptionResult.select();
+            document.execCommand('copy');
+            
+            // Show success feedback
+            const copyAlert = document.createElement('div');
+            copyAlert.className = 'alert alert-success alert-dismissible fade show mt-2';
+            copyAlert.innerHTML = `
+                ✅ <strong>Đã copy thành công!</strong> Nội dung đã được sao chép vào clipboard.
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            transcriptionResult.parentNode.appendChild(copyAlert);
+            
+            setTimeout(() => {
+                if (copyAlert && copyAlert.parentNode) {
+                    copyAlert.remove();
+                }
+            }, 3000);
+        };
+
+        window.sendSTTToTTS = function() {
+            const transcriptionText = document.getElementById('transcriptionResult').value;
+            if (!transcriptionText) {
+                alert('❌ Chưa có văn bản để chuyển sang TTS!');
+                return;
+            }
+            
+            console.log('🔄 Sending STT result to TTS:', transcriptionText.substring(0, 100) + '...');
+            
+            // Store content for TTS
+            window.currentSTTContent = transcriptionText;
+            
+            // Switch to TTS feature
+            const ttsBtn = document.querySelector('[data-feature="tts"]');
+            if (ttsBtn) {
+                ttsBtn.click();
+                
+                // Wait for TTS UI to load then populate content
+                setTimeout(() => {
+                    const ttsTextarea = document.getElementById('ttsText');
+                    if (ttsTextarea) {
+                        ttsTextarea.value = transcriptionText;
+                        
+                        // Trigger length counter update
+                        const event = new Event('input');
+                        ttsTextarea.dispatchEvent(event);
+                        
+                        console.log('📝 Auto-populated TTS with STT result');
+                        
+                        // Show success message
+                        setTimeout(() => {
+                            const autoAlert = document.createElement('div');
+                            autoAlert.className = 'alert alert-info alert-dismissible fade show';
+                            autoAlert.innerHTML = `
+                                ✅ <strong>Đã nhận nội dung từ Speech-to-Text!</strong>
+                                <br><small>Văn bản đã được nhận diện và sẵn sàng để chuyển thành giọng nói.</small>
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            `;
+                            document.querySelector('.card-body').insertBefore(autoAlert, document.querySelector('.card-body').firstChild);
+                            
+                            setTimeout(() => {
+                                if (autoAlert && autoAlert.parentNode) {
+                                    autoAlert.remove();
+                                }
+                            }, 8000);
+                        }, 500);
+                    }
+                }, 500);
+            } else {
+                alert('Không tìm thấy tính năng Text to Speech!');
+            }
+        };
     </script>
 </body>
 </html> 
